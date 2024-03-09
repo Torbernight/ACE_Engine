@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <filesystem>
 #include <string>
 
 /* 
@@ -24,18 +25,40 @@ enum ShaderStage
     Compute = 0x91B9
 };
 
+
 template<ShaderStage Stage>
 class Shader
 {
     public:
 
+    void loadBinary(const std::filesystem::path&);
+    void loadBinary();
+
+    void specialize();
+
+    Shader();
+    Shader(Shader&);
+    Shader(Shader&&);
+    Shader& operator=(Shader&);
+    Shader& operator=(Shader&&);
+    ~Shader();
 
     private:
     struct members{
-        std::string bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
+        unsigned int ShaderID = 0;
+        std::wstring bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
     } m;
 
     inline static constexpr ShaderStage s_stage = Stage; 
+};
+
+template<ShaderStage Stage>
+struct ShaderSource
+{
+    std::string src;
+
+    Shader<Stage> compile();
+    void load(const std::filesystem::path&);
 };
 
 class shaderProgram
@@ -49,7 +72,6 @@ class shaderProgram
     shaderProgram& operator=(shaderProgram&);
     ~shaderProgram();
 
-
     void use();
     static void unuse();
 
@@ -57,7 +79,7 @@ class shaderProgram
 
     struct members
     {
-        unsigned int ProgramID;
+        unsigned int ProgramID = 0;
         std::optional<Shader<Vertex>>           VertexStage;
         std::optional<Shader<Fragment>>         FragmentStage;
         std::optional<Shader<Tess_Control>>     TessControlStage;

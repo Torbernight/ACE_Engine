@@ -1,5 +1,8 @@
 CC=clang
 CXX=clang++
+GLS=glslang
+
+GLSFLAGS=-G
 
 DBGFLAGS=-g
 RLSFLAGS=-s
@@ -10,6 +13,9 @@ CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD
 CSOURCE := $(wildcard src/*.c)
 CXXSOURCE := $(wildcard src/*.cpp)
 SOURCE = $(CSOURCE) $(CXXSOURCE)
+
+SHADER := $(wildcard shader/*.glsl)
+SHADER_BIN = ${SHADER:.glsl=.spv}
 
 COBJ = $(CSOURCE:.c=.o)
 CXXOBJ = $(CXXSOURCE:.cpp=.o)
@@ -35,7 +41,15 @@ $(EXE): $(OBJ)
 		$(CC) $(CFLAGS) $< -o $@
 
 clean:
-		rm -rf $(OBJ) $(DEPENDS) $(EXE)
+		rm -f $(OBJ) $(DEPENDS) $(EXE)
 
 objclean:
-		rm -rf $(OBJ) $(DEPENDS)
+		rm -f $(OBJ) $(DEPENDS)
+
+shader: $(SHADER_BIN)
+
+%.spv: %.glsl
+		$(GLS) $(GLSFLAGS) $< -o $@
+
+shaderclean:
+	rm -f $(SHADER_BIN)

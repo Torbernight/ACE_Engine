@@ -1,8 +1,9 @@
 #pragma once
 
-#include <optional>
 #include <filesystem>
 #include <string>
+#include <vector>
+#include <cstdint>
 
 /* 
 * * * * * * * from glew.h * * * * * * * * 
@@ -36,29 +37,60 @@ class Shader
 
     void specialize();
 
+    unsigned int getShaderID() const
+    {
+        return m.ShaderID;
+    }
+
     Shader();
+    Shader(const std::filesystem::path&);
     Shader(Shader&);
     Shader(Shader&&);
     Shader& operator=(Shader&);
     Shader& operator=(Shader&&);
     ~Shader();
 
+    bool isCompiled()
+    {
+        return m.status;
+    }
+
+    void add_specialization_const(uint32_t value, uint32_t index);
+
     private:
     struct members{
         unsigned int ShaderID = 0;
         std::wstring bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
+        std::vector<uint32_t> specialization_constants;
+        std::vector<uint32_t> specialization_constants_indices;
+        bool status = false;
     } m;
 
+    void loadFile(const std::filesystem::path&);
+
+    void getStatus();
+
+    inline static
+    const char* get_stage_str()
+    {
+        switch(Stage)
+        {
+                case Vertex:
+                        return "Vertex Shader";
+                case Fragment:
+                        return "Fragment Shader";
+                case Tess_Control:
+                        return "Tesselation Control Shader";
+                case Tess_Evaluation:
+                        return "Tesselation Evaluation Shader";
+                case Geometry:
+                        return "Geometry Shader";
+                case Compute:
+                        return "Compute Shader";
+        }
+    }
+
     inline static constexpr ShaderStage s_stage = Stage; 
-};
-
-template<ShaderStage Stage>
-struct ShaderSource
-{
-    std::string src;
-
-    Shader<Stage> compile();
-    void load(const std::filesystem::path&);
 };
 
 class shaderProgram
@@ -75,16 +107,15 @@ class shaderProgram
     void use();
     static void unuse();
 
-    private:
+    template<ShaderStage Stage>
+    void attachShader(const Shader<Stage>& S);
+    void linkProgram();
 
+    private:
     struct members
     {
         unsigned int ProgramID = 0;
-        std::optional<Shader<Vertex>>           VertexStage;
-        std::optional<Shader<Fragment>>         FragmentStage;
-        std::optional<Shader<Tess_Control>>     TessControlStage;
-        std::optional<Shader<Tess_Evaluation>>  TessEvaluationStage;
-        std::optional<Shader<Geometry>>         GeometryStage;
-        std::optional<Shader<Compute>>          ComputeStage;
     } m;
+
+    void get_status();
 };

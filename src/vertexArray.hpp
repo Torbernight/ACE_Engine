@@ -27,7 +27,7 @@ class vertexArray
 
     ~vertexArray();
 
-    static unsigned int getnComponents() const {return s_nComponents;} 
+    static unsigned int getnComponents() {return s_nComponents;} 
 
     private:
     struct members {

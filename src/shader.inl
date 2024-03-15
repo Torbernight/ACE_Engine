@@ -1,8 +1,3 @@
-#include <utility>
-#include <GL/glew.h>
-#include <fstream>
-#include <iostream>
-#include "shader.hpp"
 
 template<ShaderStage Stage>
 void Shader<Stage>::loadFile(const std::filesystem::path& P)

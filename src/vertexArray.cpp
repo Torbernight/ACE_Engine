@@ -1,25 +1,70 @@
 #include <GL/glew.h>
+#include "buffer.hpp"
 #include "vertexArray.hpp"
 
-template<unsigned int nComponents> 
-void vertexArray<nComponents>::bind()
+void vertexArray::bind()
 {
     glBindVertexArray(m.VAO);
 }
 
-template<unsigned int nComponents> 
-void vertexArray<nComponents>::unbind()
+
+void vertexArray::unbind()
 {
     glBindVertexArray(0);
 }
 
-template<unsigned int nComponents> 
-void vertexArray<nComponents>::createVAO()
+
+void vertexArray::generateVAO()
 {
     glGenVertexArrays(1, &m.VAO);
+}
+
+void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t stride)
+{
     bind();
 
-    for(int n = 0; n < nComponents; n++)
+    glBindVertexBuffer(0, B.getBufferObject(), offset, stride);
+
+    for(int n = 0; n < m.nComponents; n++)
+    {
+        const vertexAttrib& Attrib = Attributes[n];
+
+        glEnableVertexAttribArray(Attrib.index);
+
+        switch(Attrib.type) {
+            case GL_FLOAT:
+            case GL_HALF_FLOAT:
+            case GL_DOUBLE:
+            case GL_FIXED:
+            case GL_INT_2_10_10_10_REV:
+            case GL_UNSIGNED_INT_2_10_10_10_REV:
+            case GL_UNSIGNED_INT_10F_11F_11F_REV:
+                glVertexAttribFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, Attrib.stride);
+                break;
+
+            case GL_UNSIGNED_INT:
+            case GL_INT:
+            case GL_UNSIGNED_BYTE:
+            case GL_BYTE:
+            case GL_SHORT:
+            case GL_UNSIGNED_SHORT:
+                glVertexAttribIFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.stride);
+                break;
+        }
+
+        glVertexAttribBinding(Attrib.index, 0);
+    }
+
+    unbind();
+}
+
+void vertexArray::setVertexAttributes(buffer &B)
+{
+    bind();
+
+    B.bind();
+
+    for(int n = 0; n < m.nComponents; n++)
     {
         const vertexAttrib& Attrib = Attributes[n];
 
@@ -49,4 +94,11 @@ void vertexArray<nComponents>::createVAO()
     }
 
     unbind();
+}
+
+
+vertexArray::~vertexArray()
+{
+    if (m.VAO)
+        glDeleteVertexArrays(1, &m.VAO);
 }

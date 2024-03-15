@@ -1,10 +1,11 @@
 #pragma once
 
-template<unsigned int nComponents = 3U> 
+#include <vector>
+
+class buffer;
+
 class vertexArray
 {
-    static_assert(nComponents > 0, "Error: Vertex array number of components must be greater than 0");
-
     public:
     struct vertexAttrib
     {
@@ -16,10 +17,13 @@ class vertexArray
         void* pointer;
     };
 
-    //std::array<vertexAttrib, nComponents> Attributes;
-    vertexAttrib Attributes[nComponents];
+    //vertexAttrib Attributes[nComponents];
+    std::vector<vertexAttrib> Attributes;
 
-    void createVAO();
+    void generateVAO();
+
+    void setVertexAttributes(buffer &B);
+    void setVertexAttributes(const buffer &B, size_t offset, size_t stride);
 
     void bind();
 
@@ -27,13 +31,18 @@ class vertexArray
 
     ~vertexArray();
 
-    static unsigned int getnComponents() {return s_nComponents;} 
+    vertexArray(unsigned int nComponents)
+    : m({0U, nComponents})
+    {
+        Attributes.resize(nComponents);
+    }
+
+    unsigned int getnComponents() const {return m.nComponents;} 
 
     private:
     struct members {
         unsigned int VAO = 0;
+        unsigned int nComponents = 3;
     } m;
-
-    inline static constexpr unsigned int s_nComponents = nComponents;
 
 };

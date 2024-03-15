@@ -3,6 +3,9 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <utility>
+#include <fstream>
+#include <iostream>
 #include <cstdint>
 
 /* 
@@ -119,3 +122,5 @@ class shaderProgram
 
     void get_status();
 };
+
+#include "shader.inl"

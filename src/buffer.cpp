@@ -4,6 +4,10 @@
 buffer::buffer(int target)
 : m(target)
 {
+}
+
+void buffer::generate()
+{
     glGenBuffers(1, &m.BufferObject);
 }
 
@@ -31,16 +35,28 @@ void buffer::bindBufferBase()
 void buffer::bufferData(int size, const void* data, int usage)
 {
     m.size = size;
-    glNamedBufferData(m.BufferObject, m.size, data, usage);
+    bind();
+    glBufferData(m.target, m.size, data, usage);
+    unbind();
 }
 
 void buffer::bufferData(const void* data, int usage)
 {
-    glNamedBufferData(m.BufferObject, m.size, data, usage);
+    bind();
+    glBufferData(m.target, m.size, data, usage);
+    unbind();
 }
 
 
 void buffer::bufferSubData(int size, int offset, const void* data)
 {
-    glNamedBufferSubData(m.BufferObject, offset, size, data);
+    bind();
+    glBufferSubData(m.target, offset, size, data);
+    unbind();
+}
+
+buffer::~buffer()
+{
+    if (m.BufferObject)
+        glDeleteBuffers(1, &m.BufferObject);
 }

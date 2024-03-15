@@ -8,6 +8,8 @@ class buffer
 
     ~buffer();
 
+    void generate();
+
     void bufferData(int size, const void* data, int usage);
     void bufferData(const void* data, int usage);
     void bufferSubData(int size, int offset, const void* data);
@@ -16,6 +18,8 @@ class buffer
 
     void bind();
     void unbind();
+
+    unsigned int getBufferObject() const {return m.BufferObject;}
 
     private:
 

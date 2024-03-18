@@ -8,7 +8,7 @@ DBGFLAGS=-g
 RLSFLAGS=-s
 
 CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
-CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD
+CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
 CSOURCE := $(wildcard src/*.c)
 CXXSOURCE := $(wildcard src/*.cpp)

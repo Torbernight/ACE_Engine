@@ -39,7 +39,7 @@ void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t str
             case GL_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_10F_11F_11F_REV:
-                glVertexAttribFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, Attrib.stride);
+                glVertexAttribFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, (GLuint)Attrib.pointer);
                 break;
 
             case GL_UNSIGNED_INT:
@@ -48,7 +48,7 @@ void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t str
             case GL_BYTE:
             case GL_SHORT:
             case GL_UNSIGNED_SHORT:
-                glVertexAttribIFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.stride);
+                glVertexAttribIFormat(Attrib.index, Attrib.size, Attrib.type, (GLuint)Attrib.pointer);
                 break;
         }
 

@@ -112,6 +112,7 @@ class shaderProgram
 
     template<ShaderStage Stage>
     void attachShader(const Shader<Stage>& S);
+    
     void linkProgram();
 
     private:

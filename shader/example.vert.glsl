@@ -21,6 +21,6 @@ void main()
     vec4 pos = Model * vec4(iPos, 1.0);
     oPos = pos.xyz;
     gl_Position = Projection * View * pos;
-    oNormal = normalize( transpose(inverse(mat3(View * Model))) * iNormal );
+    oNormal = normalize( transpose(inverse(mat3(Model))) * iNormal );
     oTexCoords = iTexCoords;
 }

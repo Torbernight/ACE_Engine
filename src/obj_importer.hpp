@@ -11,6 +11,10 @@ class obj
 
     void import(const std::filesystem::path&);
     
+    void smooth_normals();
+
+    void gen_index();
+
     struct vertex
     {
         glm::vec3 pos;
@@ -28,9 +32,16 @@ class obj
         return m.vertices;
     }
 
+    std::vector<unsigned int>& getIndices()
+    {
+        return m.indices;
+    }
+
+
     private:
         struct members
         {
             std::vector<vertex> vertices;
+            std::vector<unsigned int> indices;
         } m;
 };

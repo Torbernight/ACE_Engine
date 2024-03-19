@@ -1,5 +1,4 @@
 #include <cstring>
-#include <FreeImagePlus.h>
 #include "texture_load.hpp"
 
 image_data load_image(const std::filesystem::path& P)

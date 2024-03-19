@@ -19,6 +19,8 @@ layout(std140, binding=1) uniform Camera
     vec4 Front;
 };
 
+layout(binding=0) uniform sampler2D Albedo;
+
 const float bright = 64;
 
 void main()
@@ -33,6 +35,8 @@ void main()
     float diff = decay*max(0.0, dot(iNormal, dir));
     float spec = decay*max(0.0, pow(dot(h,dir), bright));
     
-    vec3 col = vec3(1.0, 0.1, 0.1)*(diff)+vec3(1.0)*spec;
+    vec3 albedo = texture(Albedo, iTexCoords).rgb;
+
+    vec3 col = albedo*(diff)+vec3(1.0)*spec;
     oColor = vec4(col, 1.0);
 }

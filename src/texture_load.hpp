@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FreeImagePlus.h>
 #include <filesystem>
 
 struct image_data

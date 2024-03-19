@@ -10,8 +10,8 @@ RLSFLAGS=-s
 CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
 CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
-CSOURCE := $(wildcard src/*.c)
-CXXSOURCE := $(wildcard src/*.cpp)
+CSOURCE := $(wildcard src/*.c) $(wildcard src/example/*.c)
+CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp)
 SOURCE = $(CSOURCE) $(CXXSOURCE)
 
 SHADER := $(wildcard shader/*.glsl)
@@ -23,7 +23,7 @@ OBJ = $(COBJ) $(CXXOBJ)
 
 DEPENDS = ${OBJ:.o=.d}
 
-LIBS = -lGL -lGLEW -lSDL2 -lm
+LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus
 
 EXE= cpp_template
 

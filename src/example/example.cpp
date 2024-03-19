@@ -1,0 +1,217 @@
+#include <iostream>
+#include <SDL2/SDL.h>
+#include <GL/glew.h>
+#include <glm/glm.hpp>
+
+#include "../application.hpp"
+#include "../shader.hpp"
+#include "../vertexArray.hpp"
+#include "../buffer.hpp"
+#include "../obj_importer.hpp"
+
+#include "timer.hpp"
+#include "camera.hpp"
+#include "material.hpp"
+#include "model.hpp"
+#include "debug.hpp"
+
+class MyGame : public application 
+{
+    public:
+
+    MyGame(int win_w, int win_h) : application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
+
+    float dt = 0.0;
+
+    camera player;
+    glm::mat4 Projection;
+    Model teapot;
+    shaderProgram sProgram;
+    Shader<Vertex> vShader;
+    Shader<Fragment> fShader;
+    buffer UBO = buffer(GL_UNIFORM_BUFFER);
+    buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
+    frame_timer timer;
+    bool pause_rendering = false;
+
+    void init_gl_parameters()
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(MessageCallback, nullptr);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+    }
+
+    void init()
+    {
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+        init_gl_parameters();
+        teapot.init();
+        player.makeView();
+        Projection = glm::perspective(glm::radians(70.0f), win.getWidth() / (float)win.getHeight(), 0.1f, 1000.0f);
+        UBO.generate();
+        UBO.bufferData(3*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
+        UBO.bindBufferBase(0);
+        UBO.bufferSubData(sizeof(glm::mat4), 0, &Projection[0][0]);
+        UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
+        UBO.bufferSubData(sizeof(glm::mat4), 2*sizeof(glm::mat4), &teapot.Transform[0][0]);
+        Camera_Buff.generate();
+        Camera_Buff.bufferData(32UL, nullptr, GL_DYNAMIC_DRAW);
+        Camera_Buff.bindBufferBase(1);
+
+        vShader.loadBinary("shader/example.vert.spv");
+        vShader.specialize();
+        fShader.loadBinary("shader/example.frag.spv");
+        fShader.specialize();
+        sProgram.attachShader(vShader);
+        sProgram.attachShader(fShader);
+        sProgram.linkProgram();
+    }
+
+    void processKeyEvents(const SDL_KeyboardEvent &E)
+    {
+        bool pressed = E.type == SDL_KEYDOWN;
+        switch(E.keysym.sym)
+        {
+            case SDLK_w:
+            case SDLK_UP:
+                player.update = pressed;
+                player.movement.forward = pressed;
+                break;
+
+            case SDLK_s:
+            case SDLK_DOWN:
+                player.update = pressed;
+                player.movement.backward = pressed;
+                break;
+
+            case SDLK_d:
+            case SDLK_RIGHT:
+                player.update = pressed;
+                player.movement.right = pressed;
+                break;
+
+            case SDLK_a:
+            case SDLK_LEFT:
+                player.update = pressed;
+                player.movement.left = pressed;
+                break;
+
+            case SDLK_SPACE:
+                player.update = pressed;
+                player.movement.up = pressed;
+                break;
+
+            case SDLK_LCTRL:
+                player.update = pressed;
+                player.movement.down = pressed;
+                break;
+        }
+    }
+
+    void processMouseEvents(const SDL_MouseMotionEvent& E)
+    {
+        glm::vec2 r(E.xrel, -E.yrel);
+        
+        if (r != glm::vec2(0))
+        {
+            player.rotation += r*0.1f*dt;
+            player.rotate();
+        }
+    }
+
+    void resize_window(int w, int h)
+    {
+        win.set_size(w, h);
+        glViewport(0,0,w,h);
+        float aspect = w / (float)h;
+        Projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 1000.0f);
+        UBO.bufferSubData(sizeof(glm::mat4), 0, &Projection[0][0]);
+    }
+
+    void processWindowEvents(const SDL_WindowEvent &E)
+    {
+        switch(E.type)
+        {
+            case SDL_WINDOWEVENT_RESIZED:
+                resize_window(E.data1, E.data2);
+                break;
+            case SDL_WINDOWEVENT_HIDDEN:
+                pause_rendering = true;
+                break;
+            case SDL_WINDOWEVENT_EXPOSED:
+                pause_rendering = false;
+                break;
+        }
+    }
+
+    void process_events() override
+    {
+        SDL_Event E;
+        while (SDL_PollEvent(&E))
+        {
+            switch(E.type) 
+            {
+                case SDL_QUIT:
+                    win.set_shouldClose(true);
+                    break;
+                case SDL_WINDOWEVENT:
+                    processWindowEvents(E.window);
+                    break;
+                case SDL_MOUSEMOTION:
+                    processMouseEvents(E.motion);
+                    break;
+                case SDL_KEYDOWN:
+                case SDL_KEYUP:
+                    processKeyEvents(E.key);
+                    break;
+            }
+        }
+    }
+
+    void mainLoop() override
+    {
+        while(!win.shouldClose())
+        {
+            timer.frameStart();
+
+            process_events();
+
+            teapot.Transform = glm::rotate(teapot.Transform, M_PIf*0.5f*dt, glm::vec3(0.0f,1.0f,0.0f));
+
+            player.move(dt);
+            player.rotate();
+            player.makeView();
+
+            if (pause_rendering){
+                dt = timer.frameEnd();
+                continue;
+            }
+
+            Camera_Buff.bufferSubData(16, 0, &player.pos.x);
+            Camera_Buff.bufferSubData(16, 16, &player.front.x);
+            UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
+            UBO.bufferSubData(sizeof(glm::mat4), 2*sizeof(glm::mat4), &teapot.Transform[0][0]);
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            sProgram.use();
+            teapot.render();
+            sProgram.unuse();
+
+            win.swapBuffer();
+            dt = timer.frameEnd();
+        }
+    }
+
+};
+
+int main()
+{
+    MyGame App(500, 500);
+    App.init();
+    App.mainLoop();
+    return 0;
+}

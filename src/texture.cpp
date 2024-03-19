@@ -7,14 +7,17 @@ void texture::generate()
         glGenTextures(1, &m.texture);
 }
 
+void texture::bind_unit()
+{
+        glBindTextureUnit(m.slot, m.texture);
+}
+
 void texture::bind()
 {
-        glActiveTexture(GL_TEXTURE0+m.slot);
         glBindTexture(m.target, m.texture);
 }
 void texture::unbind()
 {
-        glActiveTexture(GL_TEXTURE0+m.slot);
         glBindTexture(m.target, 0);
 }
 

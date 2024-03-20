@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <initializer_list>
 
 class buffer;
 
@@ -14,7 +15,7 @@ class vertexArray
         int type;
         int normalized;
         int stride;
-        void* pointer;
+        unsigned int offset;
     };
 
     //vertexAttrib Attributes[nComponents];
@@ -36,6 +37,12 @@ class vertexArray
     {
         Attributes.resize(nComponents);
     }
+
+    vertexArray(const std::vector<vertexAttrib>& vertex_spec)
+    : Attributes(vertex_spec) {}
+
+    vertexArray(std::initializer_list<vertexAttrib>&& vertex_spec)
+    : Attributes(vertex_spec) {}
 
     unsigned int getnComponents() const {return m.nComponents;} 
 

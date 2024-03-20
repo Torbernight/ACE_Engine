@@ -39,7 +39,7 @@ void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t str
             case GL_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_10F_11F_11F_REV:
-                glVertexAttribFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, (GLuint)Attrib.pointer);
+                glVertexAttribFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, Attrib.offset);
                 break;
 
             case GL_UNSIGNED_INT:
@@ -48,7 +48,7 @@ void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t str
             case GL_BYTE:
             case GL_SHORT:
             case GL_UNSIGNED_SHORT:
-                glVertexAttribIFormat(Attrib.index, Attrib.size, Attrib.type, (GLuint)Attrib.pointer);
+                glVertexAttribIFormat(Attrib.index, Attrib.size, Attrib.type, Attrib.offset);
                 break;
         }
 
@@ -78,7 +78,7 @@ void vertexArray::setVertexAttributes(buffer &B)
             case GL_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_2_10_10_10_REV:
             case GL_UNSIGNED_INT_10F_11F_11F_REV:
-                glVertexAttribPointer(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, Attrib.stride, Attrib.pointer);
+                glVertexAttribPointer(Attrib.index, Attrib.size, Attrib.type, Attrib.normalized, Attrib.stride, (void*)Attrib.offset);
                 break;
 
             case GL_UNSIGNED_INT:
@@ -87,7 +87,7 @@ void vertexArray::setVertexAttributes(buffer &B)
             case GL_BYTE:
             case GL_SHORT:
             case GL_UNSIGNED_SHORT:
-                glVertexAttribIPointer(Attrib.index, Attrib.size, Attrib.type, Attrib.stride, Attrib.pointer);
+                glVertexAttribIPointer(Attrib.index, Attrib.size, Attrib.type, Attrib.stride, (void*)Attrib.offset);
                 break;
         }
 

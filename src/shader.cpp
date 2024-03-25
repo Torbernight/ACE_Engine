@@ -1,6 +1,7 @@
+#include <GL/glew.h>
+#include "shader.hpp"
 
-template<ShaderStage Stage>
-void Shader<Stage>::loadFile(const std::filesystem::path& P)
+void Shader::loadFile(const std::filesystem::path& P)
 {
         std::ifstream input(P.c_str(), std::ios_base::ate);
         size_t len = input.tellg();
@@ -15,77 +16,79 @@ void Shader<Stage>::loadFile(const std::filesystem::path& P)
 }
 
 
-template<ShaderStage Stage>
-void Shader<Stage>::loadBinary(const std::filesystem::path& P)
+
+void Shader::loadBinary(const std::filesystem::path& P)
 {
         loadFile(P);
         glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
 }
 
-template<ShaderStage Stage>
-void Shader<Stage>::loadBinary()
+
+void Shader::loadBinary()
 {
         glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
 }
 
-template<ShaderStage Stage>
-Shader<Stage>::Shader(const std::filesystem::path& P)
+
+Shader::Shader(ShaderStage Stage, const std::filesystem::path& P)
 {
+        m.stage = Stage;
         m.ShaderID = glCreateShader(Stage);
         loadBinary(P);
 }
 
-template<ShaderStage Stage>
-Shader<Stage>::Shader()
+
+Shader::Shader(ShaderStage Stage)
 {
+        m.stage = Stage;
         m.ShaderID = glCreateShader(Stage);
 }
-template<ShaderStage Stage>
-Shader<Stage>::Shader(Shader& S)
+
+Shader::Shader(Shader& S)
 : m(S.m)
 {
         S.m = {};
 }
-template<ShaderStage Stage>
-Shader<Stage>::Shader(Shader&& S)
+
+Shader::Shader(Shader&& S)
 : m(std::move(S.m))
 {
 }
 
-template<ShaderStage Stage>
-Shader<Stage>& Shader<Stage>::operator=(Shader& S)
+
+Shader& Shader::operator=(Shader& S)
 {
-        Shader<Stage> temp(S);
+        Shader temp(S);
         this->m = temp.m;
         temp.m = {};
         return *this;
 }
 
-template<ShaderStage Stage>
-Shader<Stage>& Shader<Stage>::operator=(Shader&& S)
+
+Shader& Shader::operator=(Shader&& S)
 {
-        Shader<Stage> temp(S);
+        Shader temp(S);
         this->m = temp.m;
         temp.m = {};
         return *this;
 }
 
-template<ShaderStage Stage>
-Shader<Stage>::~Shader()
+
+Shader::~Shader()
 {
         if (m.ShaderID != 0)
                 glDeleteShader(m.ShaderID);
 }
 
-template<ShaderStage Stage>
-void Shader<Stage>::add_specialization_const(uint32_t value, uint32_t index)
+
+void Shader::add_specialization_const(uint32_t value, uint32_t index)
 {
         m.specialization_constants.push_back(value);
         m.specialization_constants_indices.push_back(index);
 }
 
-template<ShaderStage Stage>
-void Shader<Stage>::specialize()
+
+void Shader::specialize()
 {
         uint32_t *values = nullptr, *indices = nullptr;
         if (!m.specialization_constants.empty())
@@ -97,19 +100,17 @@ void Shader<Stage>::specialize()
         getStatus();
 }
 
-template<ShaderStage Stage>
-void Shader<Stage>::getStatus()
+
+void Shader::getStatus()
 {
         int status;
         glGetShaderiv(m.ShaderID, GL_COMPILE_STATUS, &status);
         m.status = status == GL_TRUE;
         if (!m.status)
         {
-                int size;
-                glGetShaderInfoLog(m.ShaderID, 0, &size, nullptr);
-                char *log = new char[size];
-                glGetShaderInfoLog(m.ShaderID, size, nullptr, log);
-                std::cerr << "Error: " << get_stage_str() << "not compiled!\n" << log << std::endl;
+                char *log = new char[512];
+                glGetShaderInfoLog(m.ShaderID, 512, nullptr, log);
+                std::cerr << "Error: " << get_stage_str() << " not compiled!\n" << log << std::endl;
                 delete[] log;
         }
 }
@@ -155,8 +156,8 @@ void shaderProgram::unuse()
         glUseProgram(0);
 }
 
-template<ShaderStage Stage>
-void shaderProgram::attachShader(const Shader<Stage>& S)
+
+void shaderProgram::attachShader(const Shader& S)
 {
         glAttachShader(m.ProgramID, S.getShaderID());
 }

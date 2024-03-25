@@ -1,6 +1,10 @@
 #include <GL/glew.h>
 #include "texture.hpp"
 
+texture::~texture()
+{
+        glDeleteTextures(1, &m.texture);
+}
 
 void texture::generate()
 {

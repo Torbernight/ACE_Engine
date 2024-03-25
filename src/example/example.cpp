@@ -4,7 +4,6 @@
 #include <glm/glm.hpp>
 
 #include "../application.hpp"
-#include "../shader.hpp"
 #include "../vertexArray.hpp"
 #include "../buffer.hpp"
 #include "../obj_importer.hpp"
@@ -12,8 +11,8 @@
 #include "timer.hpp"
 #include "camera.hpp"
 #include "material.hpp"
-#include "model.hpp"
 #include "debug.hpp"
+#include "model_import.hpp"
 
 class MyGame : public application 
 {
@@ -25,10 +24,7 @@ class MyGame : public application
 
     camera player;
     glm::mat4 Projection;
-    Model teapot;
-    shaderProgram sProgram;
-    Shader<Vertex> vShader;
-    Shader<Fragment> fShader;
+    scene *apartment = nullptr;
     buffer UBO = buffer(GL_UNIFORM_BUFFER);
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
     frame_timer timer;
@@ -39,16 +35,26 @@ class MyGame : public application
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(MessageCallback, nullptr);
         glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW);
+        glDisable(GL_CULL_FACE);
+        //glEnable(GL_CULL_FACE);
+        //glCullFace(GL_BACK);
+        //glFrontFace(GL_CCW);
     }
 
     void init()
     {
         SDL_SetRelativeMouseMode(SDL_TRUE);
         init_gl_parameters();
-        teapot.init();
+
+        apartment = scene::import_scene("assets/apartment.gltf");
+        if (!apartment){
+            win.set_shouldClose(true);
+            return;
+        }
+        apartment->loadShader("shader/scene.vert.spv", "shader/scene.frag.spv");
+        apartment->setUBO();
+        apartment->initMeshes();
+
         player.makeView();
         Projection = glm::perspective(glm::radians(70.0f), win.getWidth() / (float)win.getHeight(), 0.1f, 1000.0f);
         UBO.generate();
@@ -56,18 +62,9 @@ class MyGame : public application
         UBO.bindBufferBase(0);
         UBO.bufferSubData(sizeof(glm::mat4), 0, &Projection[0][0]);
         UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
-        UBO.bufferSubData(sizeof(glm::mat4), 2*sizeof(glm::mat4), &teapot.Transform[0][0]);
         Camera_Buff.generate();
         Camera_Buff.bufferData(32UL, nullptr, GL_DYNAMIC_DRAW);
         Camera_Buff.bindBufferBase(1);
-
-        vShader.loadBinary("shader/example.vert.spv");
-        vShader.specialize();
-        fShader.loadBinary("shader/example.frag.spv");
-        fShader.specialize();
-        sProgram.attachShader(vShader);
-        sProgram.attachShader(fShader);
-        sProgram.linkProgram();
     }
 
     void processKeyEvents(const SDL_KeyboardEvent &E)
@@ -179,8 +176,6 @@ class MyGame : public application
 
             process_events();
 
-            teapot.Transform = glm::rotate(teapot.Transform, M_PIf*0.5f*dt, glm::vec3(0.0f,1.0f,0.0f));
-
             player.move(dt);
             player.rotate();
             player.makeView();
@@ -193,13 +188,10 @@ class MyGame : public application
             Camera_Buff.bufferSubData(16, 0, &player.pos.x);
             Camera_Buff.bufferSubData(16, 16, &player.front.x);
             UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
-            UBO.bufferSubData(sizeof(glm::mat4), 2*sizeof(glm::mat4), &teapot.Transform[0][0]);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            sProgram.use();
-            teapot.render();
-            sProgram.unuse();
+            apartment->render(UBO, 2*sizeof(glm::mat4));
 
             win.swapBuffer();
             dt = timer.frameEnd();

@@ -30,7 +30,6 @@ enum ShaderStage
 };
 
 
-template<ShaderStage Stage>
 class Shader
 {
     public:
@@ -45,8 +44,8 @@ class Shader
         return m.ShaderID;
     }
 
-    Shader();
-    Shader(const std::filesystem::path&);
+    Shader(ShaderStage stage);
+    Shader(ShaderStage stage, const std::filesystem::path&);
     Shader(Shader&);
     Shader(Shader&&);
     Shader& operator=(Shader&);
@@ -62,6 +61,7 @@ class Shader
 
     private:
     struct members{
+        ShaderStage stage;
         unsigned int ShaderID = 0;
         std::wstring bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
         std::vector<uint32_t> specialization_constants;
@@ -73,10 +73,9 @@ class Shader
 
     void getStatus();
 
-    inline static
     const char* get_stage_str()
     {
-        switch(Stage)
+        switch(m.stage)
         {
                 case Vertex:
                         return "Vertex Shader";
@@ -93,7 +92,6 @@ class Shader
         }
     }
 
-    inline static constexpr ShaderStage s_stage = Stage; 
 };
 
 class shaderProgram
@@ -110,8 +108,7 @@ class shaderProgram
     void use();
     static void unuse();
 
-    template<ShaderStage Stage>
-    void attachShader(const Shader<Stage>& S);
+    void attachShader(const Shader& S);
     
     void linkProgram();
 
@@ -123,5 +120,3 @@ class shaderProgram
 
     void get_status();
 };
-
-#include "shader.inl"

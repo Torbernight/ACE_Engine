@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 class texture
 {
         public:
@@ -37,6 +39,47 @@ class texture
         void setTexParameter(unsigned int parameter, const int *value);
 
         void genTexImage(const void* pixels);
+
+        texture(const texture& T):
+        m(T.m)
+        {
+                const_cast<texture&>(T).m = {};
+        }
+        texture& operator=(const texture& T)
+        {
+                texture temp(T);
+                return (*this = temp);
+        }
+
+        texture(texture&& T):
+        m(std::move(T.m))
+        {}
+
+        texture(texture &T):
+        m(T.m)
+        {
+                T.m = {};
+        }
+
+        texture& operator=(texture&& T)
+        {
+                texture temp(T);
+                m = temp.m;
+                temp.m = {};
+                return *this;
+        }
+        texture& operator=(texture& T)
+        {
+                texture temp(T);
+                m = temp.m;
+                temp.m = {};
+                return *this;         
+        }
+        texture()
+        {
+                m = {};
+        }
+        ~texture();
 
         private:
         struct members

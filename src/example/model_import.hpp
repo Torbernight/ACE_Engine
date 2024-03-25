@@ -9,19 +9,25 @@
 
 #include "../vertexArray.hpp"
 #include "../buffer.hpp"
+#include "../shader.hpp"
+
+#include "material.hpp"
+#include "light.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h> 
 #include <assimp/postprocess.h>
 
 typedef std::filesystem::path path;
-
 typedef glm::vec2 vec2;
 typedef glm::vec3 vec3;
+typedef glm::vec4 vec4;
 
 #define GL_FLOAT 0x1406
 #define GL_ARRAY_BUFFER 0x8892
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
+#define GL_UNIFORM_BUFFER 0x8A11
+
 
 class mesh
 {
@@ -29,7 +35,7 @@ class mesh
     struct vertex
     {
         vec3 position;
-        vec2 texture;
+        vec2 texcoord;
         vec3 normal;
         vec3 tangent;
         vec3 bitangent;
@@ -42,7 +48,7 @@ class mesh
     : 
     VAO({
         {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
-        {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texture)},
+        {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
         {2, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, normal)},
         {3, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, tangent)},
         {4, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, bitangent)}
@@ -52,6 +58,7 @@ class mesh
     {}
 
     std::vector<vertex> vertices;
+    std::vector<unsigned int> indices;
     glm::mat4 transform;
     unsigned int materialIndex = 0;
 
@@ -60,48 +67,34 @@ class mesh
 
 };
 
-inline static vec3 cast3D(const aiVector3D &V)
+class scene
 {
-    return {V.x, V.y, V.z};
-}
-inline static vec2 cast2D(const aiVector3D &V)
-{
-    return {V.x, V.y};
-}
+    public:
+    std::vector<mesh> Meshes;
+    std::vector<light> Lights;
+    std::vector<Material> Materials;
 
-mesh process_mesh(const aiMesh& Mesh)
-{
-    mesh M;
-    M.vertices.reserve(Mesh.mNumVertices);
-    for (int n = 0; n < Mesh.mNumVertices; n++)
+    static scene* import_scene(const path& pFile);
+    void loadShader(const path& vertex, const path& fragment);
+    void setUBO();
+    void initMeshes();
+
+    void render(buffer& Transform_Buffer, size_t transform_offset);
+
+    private:
+
+    struct members
     {
-        mesh::vertex V;
-        V.position  = cast3D(Mesh.mVertices[n]);
-        V.texture   = cast2D(Mesh.mTextureCoords[0][n]);
-        V.normal    = cast3D(Mesh.mNormals[n]);
-        V.tangent   = cast3D(Mesh.mTangents[n]);
-        V.bitangent = cast3D(Mesh.mBitangents[n]);
-    }
-    M.materialIndex = Mesh.mMaterialIndex;
-}
+        buffer UBO;
+        std::vector<unsigned int> init_constants;
+        Shader vShader;
+        Shader fShader;
+        shaderProgram sProgram;
 
+        members(): UBO(GL_UNIFORM_BUFFER), vShader(Vertex), fShader(Fragment) {}
+    }m;
 
-
-bool import_model(const path& pFile) 
-{
-    Assimp::Importer importer;
-
-    const aiScene* scene = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Fast);
-
-    if (nullptr == scene) 
-    {
-        std::cerr << "Error importing file '" << pFile << "':\n" << importer.GetErrorString();
-        return false;
-    }
-
-
-    //scene->mRootNode->mNumMeshes;
-    //scene->mMeshes[0]->mNumVertices
-    
-    return true;
-}
+    static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);
+    void process_node(const aiNode* Node, const aiScene* Scene);
+    void process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform);
+};

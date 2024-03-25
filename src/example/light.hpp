@@ -1,15 +1,16 @@
 #pragma once
 
-#include <glm/vec3.hpp>
+#include <cstdint>
+#include <glm/vec3.hpp> 
+#include <glm/vec4.hpp> 
 
 struct light
 {
     glm::vec3 position;
     glm::vec3 direction;
     glm::vec3 attenuation;
-    glm::vec3 color_diffuse;
-    glm::vec3 color_specular;
-    glm::vec3 color_ambient;
+    glm::vec4 color;
     float inner_cone;
     float outer_cone;
+    uint32_t type;
 };

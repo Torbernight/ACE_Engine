@@ -5,53 +5,53 @@ static constexpr glm::vec3 world_up = glm::vec3(0.0,1.0,0.0);
 inline static
 glm::vec3 move2D(const glm::vec3& v)
 {
-    return (glm::vec3(v.x, 0.0f, v.z)/hypotf(v.x,v.z));
+    return glm::normalize(glm::vec3(v.x, 0.0f, v.z));
 }
+
+void camera::makeProj(float aspect)
+{
+    m.proj = glm::perspective(m.FOVy, aspect, m.zNear, m.zFar);
+
+}
+
 
 void camera::move(float dt)
 {
-    constexpr glm::vec3 world_up = glm::vec3(0,1,0);
-    glm::vec3 speed = glm::vec3(0.0);
+    m.vel = 
+    (float)(movement.forward-movement.backward)*move2D(m.front)
+    + 
+    (float)(movement.right-movement.left)*move2D(m.right)
+    +
+    (float)(movement.up-movement.down)*world_up;
 
-    if(movement.forward)
-        speed += move2D(front);
-    if(movement.backward)
-        speed -= move2D(front);
-    if(movement.left)
-        speed -= move2D(right);
-    if(movement.right)
-        speed += move2D(right);
-    if(movement.up)
-        speed += world_up;
-    if(movement.down)
-        speed -= world_up;
-    
-    if (glm::length(speed) == 0)
+    if (glm::dot(m.vel,m.vel) == 0)
         return;
 
-    speed = glm::normalize(speed);
-    pos += speed*dt;
+    m.vel = glm::normalize(m.vel) * glm::mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
+
+    m.pos += m.vel*dt;
 }
 
 void camera::makeView()
 {
-    view = glm::lookAt(pos, pos+front, glm::vec3(0.0,1.0,0.0));
+    m.view = glm::lookAt(m.pos, m.pos+m.front, world_up);
 }
 
-void camera::rotate()
+void camera::rotate(const glm::vec2& r, float dt)
 {
+    m.rotation += r*dt;
 
-    rotation.x = fmodf(rotation.x, 2*M_PIf);
-    //if (rotation.x < 0) rotation.x += 2*M_PIf;
-    rotation.y = glm::clamp(rotation.y, -M_PI_2f*0.98f, M_PI_2f*0.98f);
+    m.rotation.x = fmodf(m.rotation.x, 2*M_PIf);
+    //if (m.rotation.x < 0) m.rotation.x += 2*M_PIf;
+    m.rotation.y = glm::clamp(m.rotation.y, -M_PI_2f*0.98f, M_PI_2f*0.98f);
 
-    glm::vec2 c(glm::cos(rotation)), s(glm::sin(rotation));
+    glm::vec2 c(glm::cos(m.rotation)), s(glm::sin(m.rotation));
 
-    front.x = s.x*c.y;
-    front.y = s.y;
-    front.z = -c.x*c.y;
+    m.front.x = s.x*c.y;
+    m.front.y = s.y;
+    m.front.z = -c.x*c.y;
 
-    front = glm::normalize(front);
-    right = glm::normalize(glm::cross(front, world_up));
-    up    = glm::normalize(glm::cross(right, front));
+    m.front = glm::normalize(m.front);
+    m.right = glm::normalize(glm::cross(m.front, world_up));
+    m.up    = glm::normalize(glm::cross(m.right, m.front));
 }

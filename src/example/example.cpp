@@ -23,7 +23,6 @@ class MyGame : public application
     float dt = 0.0;
 
     camera player;
-    glm::mat4 Projection;
     scene *apartment = nullptr;
     buffer UBO = buffer(GL_UNIFORM_BUFFER);
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
@@ -57,14 +56,14 @@ class MyGame : public application
         apartment->initMeshes();
         apartment->initDRenderer(win.getWidth(), win.getHeight());
         
-        player.pos.y = 1.4f;
+        player.getPos().y = 1.4f;
         player.makeView();
-        Projection = glm::perspective(glm::radians(70.0f), win.getWidth() / (float)win.getHeight(), 0.1f, 1000.0f);
+        player.makeProj(win.getWidth() / (float)win.getHeight());
         UBO.generate();
         UBO.bufferData(3*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
         UBO.bindBufferBase(0);
-        UBO.bufferSubData(sizeof(glm::mat4), 0, &Projection[0][0]);
-        UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
+        UBO.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
+        UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
         Camera_Buff.generate();
         Camera_Buff.bufferData(32UL, nullptr, GL_DYNAMIC_DRAW);
         Camera_Buff.bindBufferBase(1);
@@ -77,36 +76,34 @@ class MyGame : public application
         {
             case SDLK_w:
             case SDLK_UP:
-                player.update = pressed;
                 player.movement.forward = pressed;
                 break;
 
             case SDLK_s:
             case SDLK_DOWN:
-                player.update = pressed;
                 player.movement.backward = pressed;
                 break;
 
             case SDLK_d:
             case SDLK_RIGHT:
-                player.update = pressed;
                 player.movement.right = pressed;
                 break;
 
             case SDLK_a:
             case SDLK_LEFT:
-                player.update = pressed;
                 player.movement.left = pressed;
                 break;
 
             case SDLK_SPACE:
-                player.update = pressed;
                 player.movement.up = pressed;
                 break;
 
             case SDLK_LCTRL:
-                player.update = pressed;
                 player.movement.down = pressed;
+                break;
+            
+            case SDLK_LSHIFT:
+                player.movement.sprint = pressed;
                 break;
 
             case SDLK_ESCAPE:
@@ -119,12 +116,8 @@ class MyGame : public application
     void processMouseEvents(const SDL_MouseMotionEvent& E)
     {
         glm::vec2 r(E.xrel, -E.yrel);
-        
         if (r != glm::vec2(0))
-        {
-            player.rotation += r*0.1f*dt;
-            player.rotate();
-        }
+            player.rotate(r*0.1f, dt);
     }
 
     void resize_window(int w, int h)
@@ -133,8 +126,8 @@ class MyGame : public application
         apartment->get_DRenderer().resize(w,h);
         glViewport(0,0,w,h);
         float aspect = w / (float)h;
-        Projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 1000.0f);
-        UBO.bufferSubData(sizeof(glm::mat4), 0, &Projection[0][0]);
+        player.makeProj(aspect);
+        UBO.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
     }
 
     void processWindowEvents(const SDL_WindowEvent &E)
@@ -187,7 +180,6 @@ class MyGame : public application
             process_events();
 
             player.move(dt);
-            player.rotate();
             player.makeView();
 
             if (pause_rendering){
@@ -195,9 +187,9 @@ class MyGame : public application
                 continue;
             }
 
-            Camera_Buff.bufferSubData(16, 0, &player.pos.x);
-            Camera_Buff.bufferSubData(16, 16, &player.front.x);
-            UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.view[0][0]);
+            Camera_Buff.bufferSubData(16, 0, &player.getPos().x);
+            Camera_Buff.bufferSubData(16, 16, &player.getFront().x);
+            UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

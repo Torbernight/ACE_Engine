@@ -29,6 +29,7 @@ class MyGame : public application
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
     frame_timer timer;
     bool pause_rendering = false;
+    bool escape = true;
 
     void init_gl_parameters()
     {
@@ -36,9 +37,9 @@ class MyGame : public application
         glDebugMessageCallback(MessageCallback, nullptr);
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
-        //glEnable(GL_CULL_FACE);
-        //glCullFace(GL_BACK);
-        //glFrontFace(GL_CCW);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
     }
 
     void init()
@@ -51,10 +52,12 @@ class MyGame : public application
             win.set_shouldClose(true);
             return;
         }
-        apartment->loadShader("shader/scene.vert.spv", "shader/scene.frag.spv");
+        apartment->loadShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
         apartment->setUBO();
         apartment->initMeshes();
-
+        apartment->initDRenderer(win.getWidth(), win.getHeight());
+        
+        player.pos.y = 1.4f;
         player.makeView();
         Projection = glm::perspective(glm::radians(70.0f), win.getWidth() / (float)win.getHeight(), 0.1f, 1000.0f);
         UBO.generate();
@@ -105,6 +108,11 @@ class MyGame : public application
                 player.update = pressed;
                 player.movement.down = pressed;
                 break;
+
+            case SDLK_ESCAPE:
+                if (pressed)
+                    escape = !escape;
+                break;
         }
     }
 
@@ -122,6 +130,7 @@ class MyGame : public application
     void resize_window(int w, int h)
     {
         win.set_size(w, h);
+        apartment->get_DRenderer().resize(w,h);
         glViewport(0,0,w,h);
         float aspect = w / (float)h;
         Projection = glm::perspective(glm::radians(70.0f), aspect, 0.1f, 1000.0f);
@@ -130,7 +139,7 @@ class MyGame : public application
 
     void processWindowEvents(const SDL_WindowEvent &E)
     {
-        switch(E.type)
+        switch(E.event)
         {
             case SDL_WINDOWEVENT_RESIZED:
                 resize_window(E.data1, E.data2);
@@ -166,6 +175,7 @@ class MyGame : public application
                     break;
             }
         }
+        SDL_SetRelativeMouseMode((SDL_bool)escape);
     }
 
     void mainLoop() override

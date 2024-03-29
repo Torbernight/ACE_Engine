@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+#include <SDL2/SDL.h>
 
 inline static
 void BREAKPOINT()
@@ -8,6 +10,7 @@ void BREAKPOINT()
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
+inline static
 void GLAPIENTRY
 MessageCallback( GLenum source,
                  GLenum type,

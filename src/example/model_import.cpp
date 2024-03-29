@@ -5,10 +5,6 @@ inline static vec3 cast3D(const aiVector3D &V)
 {
     return vec3(V.x, V.y, V.z);
 }
-inline static vec3 cast3D(const aiColor3D &V)
-{
-    return vec3(V.r, V.g, V.b);
-}
 inline static vec4 cast4D(const aiColor3D &V)
 {
     return vec4(V.r, V.g, V.b, 1.0f);
@@ -80,10 +76,10 @@ mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
 
 void scene::process_node(const aiNode* Node, const aiScene* Scene)
 {
+    aiMatrix4x4 Transform = Node->mTransformation;
     for (int n = 0; n < Node->mNumMeshes; n++)
     {
         unsigned int index = Node->mMeshes[n];
-        aiMatrix4x4 Transform = Node->mTransformation;
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
     }
 
@@ -93,10 +89,11 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene)
 
 void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform)
 {
+    aiMatrix4x4 Transform = ParentTransform * Node->mTransformation;
+
     for (int n = 0; n < Node->mNumMeshes; n++)
     {
         unsigned int index = Node->mMeshes[n];
-        aiMatrix4x4 Transform = ParentTransform * Node->mTransformation;
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
     }
 
@@ -104,6 +101,19 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
         process_node(Node->mChildren[n], Scene, Node->mTransformation);
 }
 
+inline static
+aiMatrix4x4 getTransform(const aiLight* Light, const aiScene* Scene)
+{
+    aiMatrix4x4 Transform = aiMatrix4x4({1.0,1.0,1.0},{0.0,0.0,0.0,0.0},{0.0,0.0,0.0});
+    aiNode* lNode = Scene->mRootNode->FindNode(Light->mName);
+
+    while(nullptr != lNode) {
+        Transform = Transform * lNode->mTransformation;
+        lNode = lNode->mParent;
+    }
+
+    return Transform;
+}
 
 scene* scene::import_scene(const path& pFile) 
 {
@@ -111,8 +121,7 @@ scene* scene::import_scene(const path& pFile)
 
     const aiScene* S = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Fast);
 
-    if (!S) 
-    {
+    if (!S) {
         std::cerr << "Error importing file '" << pFile << "':\n" << importer.GetErrorString();
         return nullptr;
     }
@@ -123,21 +132,19 @@ scene* scene::import_scene(const path& pFile)
     unsigned int nMats = S->mNumMaterials;
 
     Scene->m.init_constants.push_back(nLights);
-    Scene->m.init_constants.push_back(nMats);
 
     Scene->Lights.resize(nLights);
 
     for(int n = 0; n < nLights; n++)
     {
         const aiLight *iLight = S->mLights[n];
-        Scene->Lights[n].position = cast3D(iLight->mPosition);
+        aiMatrix4x4 Transform = getTransform(iLight, S);
+        Scene->Lights[n].position = cast3D(Transform * iLight->mPosition);
         Scene->Lights[n].attenuation.x = iLight->mAttenuationConstant;
         Scene->Lights[n].attenuation.y = iLight->mAttenuationLinear;
         Scene->Lights[n].attenuation.z = iLight->mAttenuationQuadratic;
         Scene->Lights[n].color = cast4D(iLight->mColorDiffuse);
-        //Scene->Lights[n].color_ambient = cast3D(iLight->mColorAmbient);
-        //Scene->Lights[n].color_specular = cast3D(iLight->mColorSpecular);
-        Scene->Lights[n].direction = cast3D(iLight->mDirection);
+        Scene->Lights[n].direction = glm::normalize(cast3D(aiMatrix3x3(Transform) * iLight->mDirection));
         Scene->Lights[n].inner_cone = iLight->mAngleInnerCone;
         Scene->Lights[n].outer_cone = iLight->mAngleOuterCone;
         Scene->Lights[n].type = (unsigned int)iLight->mType;
@@ -145,6 +152,10 @@ scene* scene::import_scene(const path& pFile)
     for(int n = 0; n < nMats; n++)
     {
         aiMaterial *M = S->mMaterials[n];
+        
+        if (0 == S->mMaterials[n]->GetTextureCount(aiTextureType_DIFFUSE))
+            continue;
+
         aiString TexturePath;
         M->GetTexture(aiTextureType_DIFFUSE, 0, &TexturePath);
         if (TexturePath.length == 0)
@@ -179,17 +190,37 @@ void scene::setUBO()
     m.UBO.generate();
     m.UBO.bufferData(Lights.size()*sizeof(light), Lights.data(), GL_DYNAMIC_DRAW);
     m.UBO.bindBufferBase(2);
+
+    for(auto &M : Materials)
+    {
+        material_buffer mat;
+        mat.Albedo = M.get_albedo_unit();
+        m.Materials.push_back(mat);
+    }
+
+    m.mBuffer.generate();
+    m.mBuffer.bufferData(m.Materials.size()*sizeof(material_buffer)+4UL, nullptr, GL_DYNAMIC_DRAW);
+    m.mBuffer.bindBufferBase(3);
+    m.mBuffer.bufferSubData(m.Materials.size()*sizeof(material_buffer), 4UL, m.Materials.data());
 }
 
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 {
-    m.sProgram.use();
+    m.DRenderer.bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    for(auto& M : Materials)
+    {
+        M.bind();
+    }
     for(auto& M : Meshes)
     {
+        m.mBuffer.bufferSubData(4UL, 0, &M.materialIndex);
         Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.transform[0][0]);
-        Materials[M.materialIndex].bind();
         M.render();
     }
+    m.DRenderer.unbind();
+    m.sProgram.use();
+    m.DRenderer.render();
     m.sProgram.unuse();
 }
 
@@ -199,4 +230,9 @@ void scene::initMeshes()
     {
         M.init();
     }
+}
+
+void scene::initDRenderer(int w, int h)
+{
+    m.DRenderer.init(Materials.size(), w, h);
 }

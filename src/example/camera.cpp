@@ -2,19 +2,25 @@
 
 static constexpr glm::vec3 world_up = glm::vec3(0.0,1.0,0.0);
 
+inline static
+glm::vec3 move2D(const glm::vec3& v)
+{
+    return (glm::vec3(v.x, 0.0f, v.z)/hypotf(v.x,v.z));
+}
+
 void camera::move(float dt)
 {
     constexpr glm::vec3 world_up = glm::vec3(0,1,0);
     glm::vec3 speed = glm::vec3(0.0);
 
     if(movement.forward)
-        speed += front;
+        speed += move2D(front);
     if(movement.backward)
-        speed -= front;
+        speed -= move2D(front);
     if(movement.left)
-        speed -= right;
+        speed -= move2D(right);
     if(movement.right)
-        speed += right;
+        speed += move2D(right);
     if(movement.up)
         speed += world_up;
     if(movement.down)

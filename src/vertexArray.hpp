@@ -18,7 +18,6 @@ class vertexArray
         unsigned int offset;
     };
 
-    //vertexAttrib Attributes[nComponents];
     std::vector<vertexAttrib> Attributes;
 
     void generateVAO();

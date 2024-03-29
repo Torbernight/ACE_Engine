@@ -13,6 +13,7 @@
 
 #include "material.hpp"
 #include "light.hpp"
+#include "deferred_renderer.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h> 
@@ -28,6 +29,13 @@ typedef glm::vec4 vec4;
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
 #define GL_UNIFORM_BUFFER 0x8A11
 
+struct material_buffer
+{
+    unsigned int Albedo;
+    unsigned int Normal;
+    unsigned int AO;
+    unsigned int junk;
+};
 
 class mesh
 {
@@ -78,20 +86,28 @@ class scene
     void loadShader(const path& vertex, const path& fragment);
     void setUBO();
     void initMeshes();
+    void initDRenderer(int w, int h);
 
     void render(buffer& Transform_Buffer, size_t transform_offset);
+
+    deferred_renderer& get_DRenderer() {
+        return m.DRenderer;
+    }
 
     private:
 
     struct members
     {
         buffer UBO;
+        buffer mBuffer;
+        deferred_renderer DRenderer;
         std::vector<unsigned int> init_constants;
+        std::vector<material_buffer> Materials;
         Shader vShader;
         Shader fShader;
         shaderProgram sProgram;
 
-        members(): UBO(GL_UNIFORM_BUFFER), vShader(Vertex), fShader(Fragment) {}
+        members(): UBO(GL_UNIFORM_BUFFER), mBuffer(GL_UNIFORM_BUFFER), vShader(Vertex), fShader(Fragment) {}
     }m;
 
     static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);

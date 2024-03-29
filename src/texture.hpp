@@ -2,9 +2,25 @@
 
 #include <utility>
 
+class Material;
+class framebuffer;
+
 class texture
 {
+        friend class Material;
+        friend class framebuffer;
+        
         public:
+
+        struct texture_parameters
+        {
+                unsigned int target = 0;
+                unsigned int slot = 0;
+                unsigned int format = 0; 
+                unsigned int internal_format = 0;
+                unsigned int type = 0;
+                unsigned int width = 0, height = 0, depth = 0;
+        };
 
         void generate();
         void bind();
@@ -39,6 +55,11 @@ class texture
         void setTexParameter(unsigned int parameter, const int *value);
 
         void genTexImage(const void* pixels);
+
+        unsigned int get_TexObject() const {return m.texture;}
+        unsigned int get_Target() const {return m.target;}
+
+        int get_target_dims();
 
         texture(const texture& T):
         m(T.m)
@@ -81,6 +102,19 @@ class texture
         }
         ~texture();
 
+        texture(const texture_parameters& tp)
+        : m(tp)
+        {}
+
+        operator bool()
+        {
+                return m.texture != 0;
+        }
+        bool operator!()
+        {
+                return m.texture == 0;
+        }
+
         private:
         struct members
         {
@@ -90,5 +124,11 @@ class texture
                 unsigned int format = 0, internal_format = 0;
                 unsigned int type = 0;
                 unsigned int width, height, depth;
+
+                members() = default;
+                members(const texture_parameters &tp): target(tp.target), slot(tp.slot),
+                format(tp.format), internal_format(tp.internal_format),
+                type(tp.type), width(tp.width), height(tp.height), depth(tp.depth)
+                {}
         } m;
 };

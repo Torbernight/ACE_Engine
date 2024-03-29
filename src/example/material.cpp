@@ -1,6 +1,9 @@
 #include <GL/glew.h>
 #include "material.hpp"
 
+int Material::last_slot = 0;
+
+
 image_data Material::process_image_data(const image_data& data)
 {
     image_data D = data;

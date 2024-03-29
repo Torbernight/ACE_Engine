@@ -8,11 +8,12 @@
 #include "../buffer.hpp"
 #include "../obj_importer.hpp"
 
+#include "imgui_include.hpp"
 #include "timer.hpp"
 #include "camera.hpp"
 #include "material.hpp"
 #include "debug.hpp"
-#include "model_import.hpp"
+#include "scene.hpp"
 
 class MyGame : public application 
 {
@@ -23,12 +24,21 @@ class MyGame : public application
     float dt = 0.0;
 
     camera player;
-    scene *apartment = nullptr;
-    buffer UBO = buffer(GL_UNIFORM_BUFFER);
+    scene *gameScene = nullptr;
+    buffer TransformBuffer = buffer(GL_UNIFORM_BUFFER);
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
     frame_timer timer;
     bool pause_rendering = false;
     bool escape = true;
+    ImGuiIO* imgui_IO = nullptr;
+
+    void init_imgui()
+    {
+        ImGuiContext* context = ImGui::CreateContext();
+        ImGui_ImplSDL2_InitForOpenGL(this->win.getHandle(), this->win.getContext());
+        ImGui_ImplOpenGL3_Init();
+        imgui_IO = &ImGui::GetIO();
+    }
 
     void init_gl_parameters()
     {
@@ -45,25 +55,30 @@ class MyGame : public application
     {
         SDL_SetRelativeMouseMode(SDL_TRUE);
         init_gl_parameters();
+        init_imgui();
 
-        apartment = scene::import_scene("assets/apartment.gltf");
-        if (!apartment){
+        gameScene = scene::import_scene("assets/apartment.gltf");
+        if (!gameScene){
             win.set_shouldClose(true);
             return;
         }
-        apartment->loadShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
-        apartment->setUBO();
-        apartment->initMeshes();
-        apartment->initDRenderer(win.getWidth(), win.getHeight());
+        gameScene->loadShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
+        gameScene->setUBO();
+        gameScene->initMeshes();
+        gameScene->initDRenderer(win.getWidth(), win.getHeight());
+
+        if (!glm::any(glm::isnan(gameScene->get_defaultCamPos())))
+        {
+            player.setPos(gameScene->get_defaultCamPos());
+        }
         
-        player.getPos().y = 1.4f;
         player.makeView();
         player.makeProj(win.getWidth() / (float)win.getHeight());
-        UBO.generate();
-        UBO.bufferData(3*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
-        UBO.bindBufferBase(0);
-        UBO.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
-        UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
+        TransformBuffer.generate();
+        TransformBuffer.bufferData(3*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
+        TransformBuffer.bindBufferBase(0);
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
         Camera_Buff.generate();
         Camera_Buff.bufferData(32UL, nullptr, GL_DYNAMIC_DRAW);
         Camera_Buff.bindBufferBase(1);
@@ -123,11 +138,12 @@ class MyGame : public application
     void resize_window(int w, int h)
     {
         win.set_size(w, h);
-        apartment->get_DRenderer().resize(w,h);
+        gameScene->get_DRenderer().resize(w,h);
+        gameScene->get_postProcRenderer().resize(w,h);
         glViewport(0,0,w,h);
         float aspect = w / (float)h;
         player.makeProj(aspect);
-        UBO.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
     }
 
     void processWindowEvents(const SDL_WindowEvent &E)
@@ -146,6 +162,27 @@ class MyGame : public application
         }
     }
 
+    void show_config()
+    {
+        ImGui::Begin("Config", &escape);
+
+        ImGui::Text("Hello World!");
+
+        ImGui::SeparatorText("Post Processing");
+
+        bool postProc_Update = false;
+
+        postProc_Update |= ImGui::SliderFloat("Brightness", &gameScene->postprocess.Brightness, -1.0, 2.0);
+        postProc_Update |= ImGui::SliderFloat("Contrast", &gameScene->postprocess.Contrast, 0.0, 2.0);
+        postProc_Update |= ImGui::SliderFloat("Saturation", &gameScene->postprocess.Saturation, 0.0, 4.0);
+        postProc_Update |= ImGui::SliderFloat("Gamma", &gameScene->postprocess.Gamma, 0.0, 4.0);
+
+        if (postProc_Update)
+            gameScene->updatePostProcessBuffer();
+
+        ImGui::End();
+    }
+
     void process_events() override
     {
         SDL_Event E;
@@ -160,10 +197,25 @@ class MyGame : public application
                     processWindowEvents(E.window);
                     break;
                 case SDL_MOUSEMOTION:
+                    if(imgui_IO->WantCaptureMouse){
+                        ImGui_ImplSDL2_ProcessEvent(&E);
+                        break;
+                    }
                     processMouseEvents(E.motion);
                     break;
+                case SDL_MOUSEBUTTONDOWN:
+                case SDL_MOUSEBUTTONUP:
+                if (imgui_IO->WantCaptureMouse){
+                    ImGui_ImplSDL2_ProcessEvent(&E);
+                    break;
+                }
+                break;
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
+                    if (imgui_IO->WantCaptureKeyboard){
+                        ImGui_ImplSDL2_ProcessEvent(&E);
+                        break;
+                    }
                     processKeyEvents(E.key);
                     break;
             }
@@ -177,10 +229,20 @@ class MyGame : public application
         {
             timer.frameStart();
 
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL2_NewFrame();
+            ImGui::NewFrame();
+
+            if(!escape)
+                show_config();
+
             process_events();
 
-            player.move(dt);
-            player.makeView();
+            if (escape){
+                player.move(dt);
+                player.makeView();
+            }
+            
 
             if (pause_rendering){
                 dt = timer.frameEnd();
@@ -189,15 +251,25 @@ class MyGame : public application
 
             Camera_Buff.bufferSubData(16, 0, &player.getPos().x);
             Camera_Buff.bufferSubData(16, 16, &player.getFront().x);
-            UBO.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
+            TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            apartment->render(UBO, 2*sizeof(glm::mat4));
+            gameScene->render(TransformBuffer, 2*sizeof(glm::mat4));
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             win.swapBuffer();
             dt = timer.frameEnd();
         }
+    }
+
+    void cleanup()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
     }
 
 };
@@ -207,5 +279,6 @@ int main()
     MyGame App(500, 500);
     App.init();
     App.mainLoop();
+    App.cleanup();
     return 0;
 }

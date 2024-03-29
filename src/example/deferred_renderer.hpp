@@ -5,9 +5,12 @@
 #include "../shader.hpp"
 #include "../texture.hpp"
 
+class scene;
 
 class deferred_renderer
 {
+        friend class scene;
+        
         public:
 
         void bind();
@@ -15,7 +18,9 @@ class deferred_renderer
 
         void render();
 
-        void init(unsigned int nMaterials, int w, int h);
+        void initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h);
+
+        void init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h);
 
         void resize(int w, int h){ 
                 m.FB.resize(w,h); 

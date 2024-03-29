@@ -11,6 +11,7 @@
 #include "../buffer.hpp"
 #include "../shader.hpp"
 
+#include "mesh.hpp"
 #include "material.hpp"
 #include "light.hpp"
 #include "deferred_renderer.hpp"
@@ -37,44 +38,6 @@ struct material_buffer
     unsigned int junk;
 };
 
-class mesh
-{
-    public:
-    struct vertex
-    {
-        vec3 position;
-        vec2 texcoord;
-        vec3 normal;
-        vec3 tangent;
-        vec3 bitangent;
-    };
-    
-    vertexArray VAO;
-    buffer VBO, EBO;
-
-    mesh()
-    : 
-    VAO({
-        {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
-        {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
-        {2, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, normal)},
-        {3, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, tangent)},
-        {4, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, bitangent)}
-        }), 
-    
-    VBO(GL_ARRAY_BUFFER), EBO(GL_ELEMENT_ARRAY_BUFFER)
-    {}
-
-    std::vector<vertex> vertices;
-    std::vector<unsigned int> indices;
-    glm::mat4 transform;
-    unsigned int materialIndex = 0;
-
-    void init();
-    void render();
-
-};
-
 class scene
 {
     public:
@@ -82,16 +45,33 @@ class scene
     std::vector<light> Lights;
     std::vector<Material> Materials;
 
+    struct postprocess{
+        float Brightness = 0.604;
+        float Contrast = 1.828;
+        float Saturation = 0.686;
+        float Gamma = 2.302;
+    } postprocess;
+
     static scene* import_scene(const path& pFile);
     void loadShader(const path& vertex, const path& fragment);
     void setUBO();
     void initMeshes();
     void initDRenderer(int w, int h);
 
+    void updatePostProcessBuffer();
+
     void render(buffer& Transform_Buffer, size_t transform_offset);
 
     deferred_renderer& get_DRenderer() {
         return m.DRenderer;
+    }
+    deferred_renderer& get_postProcRenderer() {
+        return m.PostProcRenderer;
+    }
+
+    const glm::vec3& get_defaultCamPos() const
+    {
+        return m.defaultCamPos;
     }
 
     private:
@@ -100,14 +80,24 @@ class scene
     {
         buffer UBO;
         buffer mBuffer;
+        buffer postProcess_buffer;
         deferred_renderer DRenderer;
+        deferred_renderer PostProcRenderer;
         std::vector<unsigned int> init_constants;
         std::vector<material_buffer> Materials;
         Shader vShader;
         Shader fShader;
         shaderProgram sProgram;
 
-        members(): UBO(GL_UNIFORM_BUFFER), mBuffer(GL_UNIFORM_BUFFER), vShader(Vertex), fShader(Fragment) {}
+        glm::vec3 defaultCamPos = glm::vec3(0.0f/0.0f);
+
+        members(): 
+        UBO(GL_UNIFORM_BUFFER), 
+        mBuffer(GL_UNIFORM_BUFFER), 
+        postProcess_buffer(GL_UNIFORM_BUFFER), 
+        vShader(Vertex), 
+        fShader(Fragment)
+        {}
     }m;
 
     static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);

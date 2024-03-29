@@ -49,6 +49,16 @@ class camera
         return m.proj;
     }
 
+    glm::vec3& getVel()
+    {
+        return m.vel;
+    }
+
+    void setPos(const glm::vec3& pos)
+    {
+        m.pos = pos;
+    }
+
     private:
 
     struct members{

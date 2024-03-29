@@ -10,9 +10,11 @@ RLSFLAGS=-s
 CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
 CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
-CSOURCE := $(wildcard src/*.c) $(wildcard src/example/*.c)
-CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp)
+CSOURCE := $(wildcard src/*.c) $(wildcard src/example/*.c) 
+CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp) $(wildcard src/imgui/*.cpp) src/imgui/backends/imgui_impl_sdl2.cpp src/imgui/backends/imgui_impl_opengl3.cpp src/imgui/misc/cpp/imgui_stdlib.cpp
 SOURCE = $(CSOURCE) $(CXXSOURCE)
+
+INCLUDE = -Isrc/imgui -I/usr/include/SDL2
 
 SHADER := $(wildcard shader/*.glsl)
 SHADER_BIN = ${SHADER:.glsl=.spv}
@@ -30,15 +32,15 @@ EXE= cpp_template
 all: $(SOURCE) $(EXE)
 
 $(EXE): $(OBJ)
-		$(CXX) $(OBJ) $(LIBS) -o $@
+		$(CXX) $(OBJ) $(LIBS) $(INCLUDE) -o $@
 
 -include ${DEPENDS}
 
 %.o: %.cpp
-		$(CXX) $(CXXFLAGS) $< -o $@
+		$(CXX) $(CXXFLAGS) $(INCLUDE) $< -o $@
 
 %.o: %.c
-		$(CC) $(CFLAGS) $< -o $@
+		$(CC) $(CFLAGS) $(INCLUDE) $< -o $@
 
 clean:
 		rm -f $(OBJ) $(DEPENDS) $(EXE)

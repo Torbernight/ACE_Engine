@@ -3,3 +3,5 @@ src/*.o
 src/*.d
 src/example/*.o
 src/example/*.d
+imgui.ini
+cpp_template

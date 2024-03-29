@@ -1,5 +1,5 @@
 #include <GL/glew.h>
-#include "model_import.hpp"
+#include "scene.hpp"
 
 inline static vec3 cast3D(const aiVector3D &V)
 {
@@ -22,27 +22,6 @@ inline static glm::mat4 cast4x4(const aiMatrix4x4 &M)
         }
     }
     return Result;
-}
-
-void mesh::init()
-{
-    VBO.generate();
-    VBO.bufferData(vertices.size()*sizeof(vertex), vertices.data(), GL_STATIC_DRAW);
-    VAO.generateVAO();
-    VAO.setVertexAttributes(VBO, 0, sizeof(vertex));
-    VAO.bind();
-    EBO.generate();
-    EBO.bind();
-    EBO.bufferData(indices.size()*4UL, indices.data(), GL_STATIC_DRAW);
-    VAO.unbind();
-}
-
-void mesh::render()
-{
-    VAO.bind();
-    EBO.bind();
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
-    VAO.unbind();
 }
 
 mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
@@ -102,14 +81,14 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
 }
 
 inline static
-aiMatrix4x4 getTransform(const aiLight* Light, const aiScene* Scene)
+aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
 {
     aiMatrix4x4 Transform = aiMatrix4x4({1.0,1.0,1.0},{0.0,0.0,0.0,0.0},{0.0,0.0,0.0});
-    aiNode* lNode = Scene->mRootNode->FindNode(Light->mName);
+    aiNode* Node = Scene->mRootNode->FindNode(nodeName);
 
-    while(nullptr != lNode) {
-        Transform = Transform * lNode->mTransformation;
-        lNode = lNode->mParent;
+    while(nullptr != Node) {
+        Transform = Transform * Node->mTransformation;
+        Node = Node->mParent;
     }
 
     return Transform;
@@ -138,7 +117,7 @@ scene* scene::import_scene(const path& pFile)
     for(int n = 0; n < nLights; n++)
     {
         const aiLight *iLight = S->mLights[n];
-        aiMatrix4x4 Transform = getTransform(iLight, S);
+        aiMatrix4x4 Transform = getTransform(iLight->mName, S);
         Scene->Lights[n].position = cast3D(Transform * iLight->mPosition);
         Scene->Lights[n].attenuation.x = iLight->mAttenuationConstant;
         Scene->Lights[n].attenuation.y = iLight->mAttenuationLinear;
@@ -165,6 +144,12 @@ scene* scene::import_scene(const path& pFile)
         Scene->Materials.push_back(Mat);
     }
 
+    if(S->HasCameras())
+    {
+        aiMatrix4x4 Transform = getTransform(S->mCameras[0]->mName, S);
+        Scene->m.defaultCamPos = cast3D(Transform * S->mCameras[0]->mPosition);
+    }
+
     Scene->process_node(S->mRootNode, S);
     
     return Scene;
@@ -185,6 +170,11 @@ void scene::loadShader(const path& vertex, const path& fragment)
     m.sProgram.linkProgram();
 }
 
+void scene::updatePostProcessBuffer()
+{
+    m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
+}
+
 void scene::setUBO()
 {
     m.UBO.generate();
@@ -202,6 +192,10 @@ void scene::setUBO()
     m.mBuffer.bufferData(m.Materials.size()*sizeof(material_buffer)+4UL, nullptr, GL_DYNAMIC_DRAW);
     m.mBuffer.bindBufferBase(3);
     m.mBuffer.bufferSubData(m.Materials.size()*sizeof(material_buffer), 4UL, m.Materials.data());
+
+    m.postProcess_buffer.generate();
+    m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
+    m.postProcess_buffer.bindBufferBase(4);
 }
 
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
@@ -219,9 +213,15 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
         M.render();
     }
     m.DRenderer.unbind();
+    m.PostProcRenderer.m.FB.bind();
     m.sProgram.use();
     m.DRenderer.render();
     m.sProgram.unuse();
+    m.PostProcRenderer.m.FB.unbind();
+    m.PostProcRenderer.m.sProgram.use();
+    m.PostProcRenderer.render();
+    m.PostProcRenderer.m.sProgram.unuse();
+
 }
 
 void scene::initMeshes()
@@ -234,5 +234,6 @@ void scene::initMeshes()
 
 void scene::initDRenderer(int w, int h)
 {
-    m.DRenderer.init(Materials.size(), w, h);
+    m.DRenderer.init("shader/scene.vert.spv", "shader/scene.frag.spv", Materials.size(), w, h);
+    m.PostProcRenderer.initPostProc("shader/deferred.vert.spv", "shader/postprocess.frag.spv", w,h);
 }

@@ -37,6 +37,12 @@ vec3 applySaturation(in vec3 c, in float saturation)
         return clamp(mix(grayscale(c), c, saturation),vec3(0.0),vec3(1.0));
 }
 
+vec3 blackBars(in vec2 uv, in vec3 col, in float oldAspect, in float newAspect)
+{
+        vec2 uv2 = (uv*2-1)*vec2(oldAspect, 1.0);
+        return abs(uv2.x) > newAspect ? vec3(0.0) : col;
+}
+
 void main()
 {
         vec2 resolution = textureSize(uScreen, 0).xy;
@@ -47,6 +53,8 @@ void main()
         color = applySaturation(color, uSaturation);
 
         color = applyGamma(color, uGamma);
+
+        color = blackBars(iTexCoords, color, resolution.x/resolution.y, 4.0/3.0);
 
         oColor = vec4(color, 1.0);
 }

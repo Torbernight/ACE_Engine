@@ -12,18 +12,18 @@ time_point get_time()
     return Time::now();
 }
 
-struct frame_timer
+struct Timer
 {
     time_point T0, T1;
     fsec T;
     float dt;
 
-    void frameStart()
+    void Start()
     {
         T0 = get_time();
     }
 
-    float frameEnd()
+    float Count()
     {
         T1 = get_time();
         T = (T1 - T0);

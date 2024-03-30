@@ -22,14 +22,15 @@ class MyGame : public application
     MyGame(int win_w, int win_h) : application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
 
     float dt = 0.0;
-
+    uint64_t frame = 0;
     camera player;
     scene *gameScene = nullptr;
     buffer TransformBuffer = buffer(GL_UNIFORM_BUFFER);
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
-    frame_timer timer;
+    Timer frame_timer, app_timer;
     bool pause_rendering = false;
     bool escape = true;
+
     ImGuiIO* imgui_IO = nullptr;
 
     void init_imgui()
@@ -53,6 +54,7 @@ class MyGame : public application
 
     void init()
     {
+        app_timer.Start();
         SDL_SetRelativeMouseMode(SDL_TRUE);
         init_gl_parameters();
         init_imgui();
@@ -166,7 +168,12 @@ class MyGame : public application
     {
         ImGui::Begin("Config", &escape);
 
-        ImGui::Text("Hello World!");
+        float runtime = app_timer.Count();
+
+        ImGui::Text("Frame: %lu", frame);
+        ImGui::Text("Runtime: %f", runtime);
+        ImGui::Text("deltaTime: %f", dt);
+        ImGui::Text("fps: %f", frame/runtime);
 
         ImGui::SeparatorText("Post Processing");
 
@@ -227,7 +234,7 @@ class MyGame : public application
     {
         while(!win.shouldClose())
         {
-            timer.frameStart();
+            frame_timer.Start();
 
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL2_NewFrame();
@@ -245,7 +252,7 @@ class MyGame : public application
             
 
             if (pause_rendering){
-                dt = timer.frameEnd();
+                dt = frame_timer.Count();
                 continue;
             }
 
@@ -261,7 +268,8 @@ class MyGame : public application
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             win.swapBuffer();
-            dt = timer.frameEnd();
+            dt = frame_timer.Count();
+            frame++;
         }
     }
 

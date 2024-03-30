@@ -27,6 +27,10 @@ inline static glm::mat4 cast4x4(const aiMatrix4x4 &M)
 mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
 {
     mesh M;
+
+    M.bounding_box.max = cast3D(Mesh->mAABB.mMax);
+    M.bounding_box.min = cast3D(Mesh->mAABB.mMin);
+
     M.transform = cast4x4(Transform);
     M.vertices.reserve(Mesh->mNumVertices);
     

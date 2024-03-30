@@ -2,6 +2,7 @@
 
 #include "../vertexArray.hpp"
 #include "../buffer.hpp"
+#include "AABB.hpp"
 #include <glm/vec3.hpp>
 #include <glm/vec2.hpp>
 #include <glm/mat4x4.hpp>
@@ -26,6 +27,7 @@ class mesh
     
     vertexArray VAO;
     buffer VBO, EBO;
+    AABB bounding_box;
 
     mesh()
     : 

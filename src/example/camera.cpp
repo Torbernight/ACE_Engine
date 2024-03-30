@@ -30,6 +30,11 @@ void camera::move(float dt)
     m.vel = glm::normalize(m.vel) * glm::mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
 
     m.pos += m.vel*dt;
+
+    glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.85f, m.pos.z);
+    glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
+    this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+
 }
 
 void camera::makeView()

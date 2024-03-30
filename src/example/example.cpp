@@ -31,6 +31,8 @@ class MyGame : public application
     bool pause_rendering = false;
     bool escape = true;
 
+    bool vsync = false;
+
     ImGuiIO* imgui_IO = nullptr;
 
     void init_imgui()
@@ -164,6 +166,14 @@ class MyGame : public application
         }
     }
 
+    void setVSync()
+    {
+        if(SDL_GL_SetSwapInterval(vsync ? -1 : 0))
+        {
+            SDL_GL_SetSwapInterval(vsync ? 1 : 0);
+        }
+    }
+
     void show_config()
     {
         ImGui::Begin("Config", &escape);
@@ -173,7 +183,11 @@ class MyGame : public application
         ImGui::Text("Frame: %lu", frame);
         ImGui::Text("Runtime: %f", runtime);
         ImGui::Text("deltaTime: %f", dt);
-        ImGui::Text("fps: %f", frame/runtime);
+        ImGui::Text("average fps: %f", frame/runtime);
+        ImGui::Text("instant fps: %f", 1.0/dt);
+
+        if (ImGui::Checkbox("VSync", &vsync))
+            setVSync();
 
         ImGui::SeparatorText("Post Processing");
 
@@ -249,7 +263,6 @@ class MyGame : public application
                 player.move(dt);
                 player.makeView();
             }
-            
 
             if (pause_rendering){
                 dt = frame_timer.Count();
@@ -268,8 +281,8 @@ class MyGame : public application
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
             win.swapBuffer();
-            dt = frame_timer.Count();
             frame++;
+            dt = frame_timer.Count();
         }
     }
 

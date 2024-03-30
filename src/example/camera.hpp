@@ -4,6 +4,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "AABB.hpp"
 
 class camera
 {
@@ -57,6 +58,9 @@ class camera
     void setPos(const glm::vec3& pos)
     {
         m.pos = pos;
+        glm::vec3 bcenter = glm::vec3(pos.x, pos.y-0.85f, pos.z);
+        glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
+        this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
     }
 
     private:
@@ -77,6 +81,8 @@ class camera
         glm::mat4 proj = glm::mat4(1);
         
         bool update = false;
+
+        AABB bounding_box;
 
     } m;
 

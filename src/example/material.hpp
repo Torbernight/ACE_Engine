@@ -11,24 +11,65 @@ class Material
 {
     public:
 
-    void load(const path& albedo)
+    void load(const path& albedo, const path& normal, const path& roughness)
     {
         image_data alb_data = process_image_data(load_image(albedo));
-        //image_data nor_data = process_image_data(load_image(normal));
-        set_texture(m.Albedo, alb_data, last_slot);
-        last_slot += 1;
-        //set_texture(Normal, nor_data);
+        image_data nor_data = process_image_data(load_image(normal));
+        image_data roug_data = process_image_data(load_image(roughness));
+        set_texture(m.Albedo, alb_data, last_slot++);
+        set_texture(m.Normal, nor_data, last_slot++);
+        set_texture(m.Roughness, roug_data, last_slot++);
+    }
+
+    void loadAlbedo(const path& albedo)
+    {
+        image_data alb_data = process_image_data(load_image(albedo));
+        set_texture(m.Albedo, alb_data, last_slot++);
+    }
+
+    void loadNormal(const path& normal)
+    {
+        image_data nor_data = process_image_data(load_image(normal));
+        set_texture(m.Normal, nor_data, last_slot++);
+    }
+
+    void loadRoughness(const path& roughness)
+    {
+        image_data roug_data = process_image_data(load_image(roughness));
+        set_texture(m.Roughness, roug_data, last_slot++);
     }
 
     void bind()
     {
         m.Albedo.bind_unit();
+        m.Normal.bind_unit();
     }
 
-    unsigned int get_albedo_unit() const 
+    texture& get_albedo()
     {
-        return m.Albedo.m.slot;
+        return m.Albedo;
     }
+    const texture& get_albedo() const
+    {
+        return m.Albedo;
+    }
+    texture& get_normal()
+    {
+        return m.Normal;
+    }
+    const texture& get_normal() const
+    {
+        return m.Normal;
+    }
+    texture& get_roughness()
+    {
+        return m.Roughness;
+    }
+    const texture& get_roughness() const
+    {
+        return m.Roughness;
+    }
+
 
     Material(const Material& M) :
     m(M.m)
@@ -72,7 +113,8 @@ class Material
     struct members
     {
         texture Albedo;
-        //texture Normal;
+        texture Normal;
+        texture Roughness;
     } m;
 
     static image_data process_image_data(const image_data& data);

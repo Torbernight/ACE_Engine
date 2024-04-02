@@ -38,10 +38,14 @@ class vertexArray
     }
 
     vertexArray(const std::vector<vertexAttrib>& vertex_spec)
-    : Attributes(vertex_spec) {}
+    : Attributes(vertex_spec) {
+        m.nComponents = Attributes.size();
+    }
 
     vertexArray(std::initializer_list<vertexAttrib>&& vertex_spec)
-    : Attributes(vertex_spec) {}
+    : Attributes(vertex_spec) {
+        m.nComponents = Attributes.size();
+    }
 
     unsigned int getnComponents() const {return m.nComponents;} 
 

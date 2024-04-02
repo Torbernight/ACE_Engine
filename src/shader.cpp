@@ -1,9 +1,13 @@
+#include <iostream>
 #include <GL/glew.h>
 #include "shader.hpp"
 
 void Shader::loadFile(const std::filesystem::path& P)
 {
         std::ifstream input(P.c_str(), std::ios_base::ate);
+        if (input.fail()){
+                std::cerr << "Error: file " << P << "not found!" << std::endl;
+        }
         size_t len = input.tellg();
         input.seekg(std::ios_base::beg);
         size_t padding = len%4 == 0 ? 0 : 4 - len%4;

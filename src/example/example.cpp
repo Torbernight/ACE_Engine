@@ -29,8 +29,7 @@ class MyGame : public application
     buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
     Timer frame_timer, app_timer;
     bool pause_rendering = false;
-    bool escape = true;
-
+    bool escape = false;
     bool vsync = false;
 
     ImGuiIO* imgui_IO = nullptr;
@@ -45,8 +44,10 @@ class MyGame : public application
 
     void init_gl_parameters()
     {
+#ifndef NDEBUG
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(MessageCallback, nullptr);
+#endif
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
         glEnable(GL_CULL_FACE);
@@ -61,7 +62,7 @@ class MyGame : public application
         init_gl_parameters();
         init_imgui();
 
-        gameScene = scene::import_scene("assets/apartment.gltf");
+        gameScene = scene::import_scene("assets/test.gltf");
         if (!gameScene){
             win.set_shouldClose(true);
             return;
@@ -142,8 +143,7 @@ class MyGame : public application
     void resize_window(int w, int h)
     {
         win.set_size(w, h);
-        gameScene->get_DRenderer().resize(w,h);
-        gameScene->get_postProcRenderer().resize(w,h);
+        gameScene->resizeViewport(w,h);
         glViewport(0,0,w,h);
         float aspect = w / (float)h;
         player.makeProj(aspect);
@@ -169,34 +169,28 @@ class MyGame : public application
     void setVSync()
     {
         if(SDL_GL_SetSwapInterval(vsync ? -1 : 0))
-        {
             SDL_GL_SetSwapInterval(vsync ? 1 : 0);
-        }
     }
 
     void show_config()
     {
         ImGui::Begin("Config", &escape);
 
-        float runtime = app_timer.Count();
-
         ImGui::Text("Frame: %lu", frame);
-        ImGui::Text("Runtime: %f", runtime);
+        ImGui::Text("Runtime: %f", app_timer.Count());
         ImGui::Text("deltaTime: %f", dt);
-        ImGui::Text("average fps: %f", frame/runtime);
-        ImGui::Text("instant fps: %f", 1.0/dt);
+        ImGui::Text("fps: %.2f", 1.0/dt);
 
         if (ImGui::Checkbox("VSync", &vsync))
             setVSync();
 
         ImGui::SeparatorText("Post Processing");
 
-        bool postProc_Update = false;
-
-        postProc_Update |= ImGui::SliderFloat("Brightness", &gameScene->postprocess.Brightness, -1.0, 2.0);
-        postProc_Update |= ImGui::SliderFloat("Contrast", &gameScene->postprocess.Contrast, 0.0, 2.0);
-        postProc_Update |= ImGui::SliderFloat("Saturation", &gameScene->postprocess.Saturation, 0.0, 4.0);
-        postProc_Update |= ImGui::SliderFloat("Gamma", &gameScene->postprocess.Gamma, 0.0, 4.0);
+        uint8_t postProc_Update = 0;
+        postProc_Update |= ImGui::DragFloat("Brightness", &gameScene->postprocess.Brightness, 0.025, -1.0, 2.0);
+        postProc_Update |= ImGui::DragFloat("Contrast", &gameScene->postprocess.Contrast, 0.025, 0.0, 2.0);
+        postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
+        postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
 
         if (postProc_Update)
             gameScene->updatePostProcessBuffer();
@@ -239,9 +233,34 @@ class MyGame : public application
                     }
                     processKeyEvents(E.key);
                     break;
+                case SDL_TEXTINPUT:
+                    if (imgui_IO->WantCaptureKeyboard){
+                        ImGui_ImplSDL2_ProcessEvent(&E);
+                    }
+                    break;
             }
         }
-        SDL_SetRelativeMouseMode((SDL_bool)escape);
+        SDL_SetRelativeMouseMode((SDL_bool)(!escape));
+    }
+
+    void imgui_frame_start()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+    }
+
+    void imgui_frame_end()
+    {
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
+
+    void update_UBOs()
+    {
+        glm::vec3 playerdata[2] = {player.getPos(), player.getFront()}; 
+        Camera_Buff.bufferSubData(32, 0, playerdata);
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
     }
 
     void mainLoop() override
@@ -250,35 +269,30 @@ class MyGame : public application
         {
             frame_timer.Start();
 
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplSDL2_NewFrame();
-            ImGui::NewFrame();
-
-            if(!escape)
-                show_config();
+            imgui_frame_start();
 
             process_events();
 
-            if (escape){
+            if(escape) {
+                show_config();
+
+            } else {
                 player.move(dt);
                 player.makeView();
             }
 
-            if (pause_rendering){
+            if (pause_rendering) {
                 dt = frame_timer.Count();
                 continue;
             }
 
-            Camera_Buff.bufferSubData(16, 0, &player.getPos().x);
-            Camera_Buff.bufferSubData(16, 16, &player.getFront().x);
-            TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
+            update_UBOs();
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             gameScene->render(TransformBuffer, 2*sizeof(glm::mat4));
 
-            ImGui::Render();
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            imgui_frame_end();
 
             win.swapBuffer();
             frame++;

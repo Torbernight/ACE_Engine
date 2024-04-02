@@ -1,4 +1,5 @@
 #include <GL/glew.h>
+#include <thread>
 #include "scene.hpp"
 
 inline static vec3 cast3D(const aiVector3D &V)
@@ -24,25 +25,22 @@ inline static glm::mat4 cast4x4(const aiMatrix4x4 &M)
     return Result;
 }
 
-mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
+inline static
+void process_faces(const aiMesh* Mesh, std::vector<uint32_t> *indices)
 {
-    mesh M;
-
-    M.bounding_box.max = cast3D(Mesh->mAABB.mMax);
-    M.bounding_box.min = cast3D(Mesh->mAABB.mMin);
-
-    M.transform = cast4x4(Transform);
-    M.vertices.reserve(Mesh->mNumVertices);
-    
     for (int n = 0; n < Mesh->mNumFaces; n++)
     {
         const aiFace &F = Mesh->mFaces[n];
         for(int i = 0; i < F.mNumIndices; i++)
         {
-            M.indices.push_back(F.mIndices[i]);
+            indices->push_back(F.mIndices[i]);
         }
     }
+}
 
+inline static
+void process_vertices(const aiMesh* Mesh, std::vector<mesh::vertex> *vertices)
+{
     for (int n = 0; n < Mesh->mNumVertices; n++)
     {
         mesh::vertex V;
@@ -51,9 +49,26 @@ mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
         V.normal    = cast3D(Mesh->mNormals[n]);
         V.tangent   = cast3D(Mesh->mTangents[n]);
         V.bitangent = cast3D(Mesh->mBitangents[n]);
-        M.vertices.push_back(V);
+        vertices->push_back(V);
     }
+}
+
+mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
+{
+    mesh M;
+
+    M.vertices.reserve(Mesh->mNumVertices);
+    M.indices.reserve(Mesh->mNumFaces*3);
+    std::thread Tfaces(process_faces, Mesh, &M.indices);
+    std::thread Tverts(process_vertices, Mesh, &M.vertices);
+
+    M.bounding_box.max = cast3D(Mesh->mAABB.mMax);
+    M.bounding_box.min = cast3D(Mesh->mAABB.mMin);
+    M.transform = cast4x4(Transform);
     M.materialIndex = Mesh->mMaterialIndex;
+
+    Tfaces.join();
+    Tverts.join();
     return M;
 }
 
@@ -98,6 +113,7 @@ aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
     return Transform;
 }
 
+
 scene* scene::import_scene(const path& pFile) 
 {
     Assimp::Importer importer;
@@ -136,15 +152,14 @@ scene* scene::import_scene(const path& pFile)
     {
         aiMaterial *M = S->mMaterials[n];
         
-        if (0 == S->mMaterials[n]->GetTextureCount(aiTextureType_DIFFUSE))
+        aiString AlbedoPath, NormalPath, RoughnessPath;
+        M->GetTexture(aiTextureType_BASE_COLOR, 0, &AlbedoPath);
+        M->GetTexture(aiTextureType_NORMALS, 0, &NormalPath);
+        M->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &RoughnessPath);
+        if (AlbedoPath.length == 0 || NormalPath.length == 0 || RoughnessPath.length == 0)
             continue;
-
-        aiString TexturePath;
-        M->GetTexture(aiTextureType_DIFFUSE, 0, &TexturePath);
-        if (TexturePath.length == 0)
-         continue;
         Material Mat;
-        Mat.load(pFile.parent_path() / TexturePath.C_Str());
+        Mat.load(pFile.parent_path() / AlbedoPath.C_Str(), pFile.parent_path() / NormalPath.C_Str(), pFile.parent_path() / RoughnessPath.C_Str());
         Scene->Materials.push_back(Mat);
     }
 
@@ -188,14 +203,15 @@ void scene::setUBO()
     for(auto &M : Materials)
     {
         material_buffer mat;
-        mat.Albedo = M.get_albedo_unit();
+        mat.Albedo = M.get_albedo().get_slot();
+        mat.Normal = M.get_normal().get_slot();
+        mat.Roughness = M.get_roughness().get_slot();
         m.Materials.push_back(mat);
     }
 
     m.mBuffer.generate();
-    m.mBuffer.bufferData(m.Materials.size()*sizeof(material_buffer)+4UL, nullptr, GL_DYNAMIC_DRAW);
+    m.mBuffer.bufferData(sizeof(material_buffer), nullptr, GL_DYNAMIC_DRAW);
     m.mBuffer.bindBufferBase(3);
-    m.mBuffer.bufferSubData(m.Materials.size()*sizeof(material_buffer), 4UL, m.Materials.data());
 
     m.postProcess_buffer.generate();
     m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
@@ -212,20 +228,19 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     }
     for(auto& M : Meshes)
     {
-        m.mBuffer.bufferSubData(4UL, 0, &M.materialIndex);
+        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
         Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.transform[0][0]);
         M.render();
     }
     m.DRenderer.unbind();
     m.PostProcRenderer.m.FB.bind();
     m.sProgram.use();
-    m.DRenderer.render();
+    m.DRenderer.render(m.PostProcRenderer.m.w, m.PostProcRenderer.m.h);
     m.sProgram.unuse();
     m.PostProcRenderer.m.FB.unbind();
     m.PostProcRenderer.m.sProgram.use();
-    m.PostProcRenderer.render();
+    m.PostProcRenderer.render(m.DRenderer.m.w, m.DRenderer.m.h);
     m.PostProcRenderer.m.sProgram.unuse();
-
 }
 
 void scene::initMeshes()
@@ -239,5 +254,5 @@ void scene::initMeshes()
 void scene::initDRenderer(int w, int h)
 {
     m.DRenderer.init("shader/scene.vert.spv", "shader/scene.frag.spv", Materials.size(), w, h);
-    m.PostProcRenderer.initPostProc("shader/deferred.vert.spv", "shader/postprocess.frag.spv", w,h);
+    m.PostProcRenderer.initPostProc("shader/deferred.vert.spv", "shader/postprocess.frag.spv", w/2,h/2);
 }

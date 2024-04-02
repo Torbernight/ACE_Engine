@@ -6,7 +6,7 @@ void mesh::init()
     VBO.generate();
     VBO.bufferData(vertices.size()*sizeof(vertex), vertices.data(), GL_STATIC_DRAW);
     VAO.generateVAO();
-    VAO.setVertexAttributes(VBO, 0, sizeof(vertex));
+    VAO.setVertexAttributes(VBO);
     VAO.bind();
     EBO.generate();
     EBO.bind();

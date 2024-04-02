@@ -38,6 +38,10 @@ class texture
         {
                 m.slot = slot;
         }
+        unsigned int get_slot() const
+        {
+                return m.slot;
+        }
 
         void setWidth(unsigned int width){ m.width = width;}
         void setHeight(unsigned int height){ m.height = height;}
@@ -120,7 +124,7 @@ class texture
         {
                 unsigned int texture = 0;
                 unsigned int target = 0;
-                unsigned int slot = 0;
+                int slot = 0;
                 unsigned int format = 0, internal_format = 0;
                 unsigned int type = 0;
                 unsigned int width, height, depth;

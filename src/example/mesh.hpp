@@ -26,27 +26,27 @@ class mesh
     };
     
     vertexArray VAO;
-    buffer VBO, EBO;
+    buffer VBO;
+    buffer EBO;
+    std::vector<vertex> vertices;
+    std::vector<unsigned int> indices;
     AABB bounding_box;
+    glm::mat4 transform;
+    unsigned int materialIndex = 0;
 
     mesh()
     : 
     VAO({
         {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
         {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
-        {2, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, normal)},
-        {3, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, tangent)},
-        {4, 3 , GL_FLOAT, 1, sizeof(vertex), offsetof(vertex, bitangent)}
+        {2, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, normal)},
+        {3, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, tangent)},
+        {4, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, bitangent)}
         }), 
     
     VBO(GL_ARRAY_BUFFER), EBO(GL_ELEMENT_ARRAY_BUFFER)
     {}
-
-    std::vector<vertex> vertices;
-    std::vector<unsigned int> indices;
-    glm::mat4 transform;
-    unsigned int materialIndex = 0;
-
+    
     void init();
     void render();
 

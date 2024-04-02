@@ -1,22 +1,19 @@
 #version 460
 
+#extension GL_GOOGLE_include_directive : enable
+
 layout(location=0) in vec2 iTexCoords;
 layout(location=0) out vec4 oColor;
 
 layout(binding=0) uniform sampler2D uScreen;
 
-layout(binding=4, std140) uniform postProcess
-{
-        float uBrightness;
-        float uContrast;
-        float uSaturation;
-        float uGamma;
-};
+#include "uniform_blocks.glsl"
 
 float luminance(in vec3 c)
 {
         return dot(c, vec3(0.299, 0.587, 0.114));
 }
+
 vec3 grayscale(in vec3 c)
 {
         return vec3(luminance(c));
@@ -43,12 +40,40 @@ vec3 blackBars(in vec2 uv, in vec3 col, in float oldAspect, in float newAspect)
         return abs(uv2.x) > newAspect ? vec3(0.0) : col;
 }
 
+vec3 change_luminance(vec3 c_in, float l_out)
+{
+    float l_in = luminance(c_in);
+    return c_in * (l_out / l_in);
+}
+
+vec3 reinhard_extended_luminance(in vec3 v, in float max_white_l)
+{
+    float l_old = luminance(v);
+    float numerator = l_old * (1.0 + (l_old / (max_white_l * max_white_l)));
+    float l_new = numerator / (1.0 + l_old);
+    return change_luminance(v, l_new);
+}
+
+vec4 blerp(vec2 texcoords, vec2 resolution, sampler2D tex)
+{
+        vec2 tc = texcoords*resolution/2;
+        vec2 a00 = 2*floor(tc)/resolution;
+        vec2 a11 = 2*ceil(tc)/resolution;
+        vec2 a01 = vec2(a00.x, a11.y);
+        vec2 a10 = vec2(a11.x, a00.y);
+        vec2 fr = fract(tc);
+
+        return mix(
+                mix(texture(tex, a00),texture(tex, a10),fr.x),
+                mix(texture(tex, a01),texture(tex, a11),fr.x),fr.y);
+}
+
 void main()
 {
         vec2 resolution = textureSize(uScreen, 0).xy;
-        vec2 texcoords = floor(iTexCoords*resolution*0.25)*4/resolution;
-        vec3 color = texture(uScreen, texcoords).rgb;
+        vec3 color = texture(uScreen, iTexCoords).rgb;
 
+        color = clamp(reinhard_extended_luminance(color, 2717.570653294113), vec3(0),vec3(1));
         color = applyContrastandBrigtness(color, uContrast, uBrightness);
         color = applySaturation(color, uSaturation);
 

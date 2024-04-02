@@ -32,10 +32,9 @@ typedef glm::vec4 vec4;
 
 struct material_buffer
 {
-    unsigned int Albedo;
-    unsigned int Normal;
-    unsigned int AO;
-    unsigned int junk;
+    int Albedo;
+    int Normal;
+    int Roughness;
 };
 
 class scene
@@ -44,6 +43,7 @@ class scene
     std::vector<mesh> Meshes;
     std::vector<light> Lights;
     std::vector<Material> Materials;
+    
 
     struct postprocess{
         float Brightness = 0.604;
@@ -57,6 +57,12 @@ class scene
     void setUBO();
     void initMeshes();
     void initDRenderer(int w, int h);
+
+    void resizeViewport(int w, int h)
+    {
+        m.DRenderer.resize(w,h);
+        m.PostProcRenderer.resize(w/2,h/2);
+    }
 
     void updatePostProcessBuffer();
 

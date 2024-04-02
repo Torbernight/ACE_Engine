@@ -1,3 +1,4 @@
+#include <iostream>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
@@ -6,7 +7,10 @@
 void application::m_init()
 {
     glewExperimental = GL_TRUE;
-    glewInit();
+    int status = glewInit();
+    if (status != GLEW_OK){
+        std::cerr << "Fatal error: couldn't initialize GLEW library:\n\t" << glewGetErrorString(status) << std::endl;
+    }
     glClearColor(0.3, 0.5, 0.4, 1.0);
 }
 

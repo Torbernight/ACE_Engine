@@ -66,21 +66,6 @@ void framebuffer::resize(unsigned int w, unsigned int h)
                 T.unbind();
 
         }
-        if (m.stencil_attachment){
-                texture &T = m.stencil_attachment;
-                glDeleteTextures(1, &T.m.texture);
-                T.generate();
-                T.setWidth(w);
-                T.setHeight(h);
-                T.bind();
-                T.genTexImage(nullptr);
-                T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                T.unbind();
-        }
         setup();
 }
 
@@ -148,9 +133,6 @@ void framebuffer::setup()
         if (m.depth_attachment){
                 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m.depth_attachment.get_Target(), m.depth_attachment.get_TexObject(), 0);
         }
-        if (m.stencil_attachment){
-                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,m.stencil_attachment.get_Target(), m.stencil_attachment.get_TexObject(), 0);
-        }
         
         create_RBO();
 
@@ -165,6 +147,8 @@ void framebuffer::bindTextures()
         {
                 T.bind_unit();
         }
+        if (m.depth_attachment)
+                m.depth_attachment.bind_unit();
 }
 
 void framebuffer::create_RBO()
@@ -172,15 +156,9 @@ void framebuffer::create_RBO()
         unsigned int internalFormat = 0;
         unsigned int attachment = 0;
 
-        if(!m.depth_attachment && !m.stencil_attachment){
+        if(!m.depth_attachment){
                 internalFormat = GL_DEPTH24_STENCIL8;
                 attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-        } else if (!m.stencil_attachment){
-                internalFormat = GL_STENCIL_INDEX8;
-                attachment = GL_STENCIL_ATTACHMENT;
-        } else if (!m.depth_attachment){
-                internalFormat = GL_DEPTH_COMPONENT24;
-                attachment = GL_DEPTH_ATTACHMENT;
         } else {
                 return;
         }

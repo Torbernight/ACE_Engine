@@ -36,7 +36,6 @@ class framebuffer
                 unsigned int RBO = 0;
                 std::vector<texture> color_attachments;
                 texture depth_attachment;
-                texture stencil_attachment;
                 unsigned int w = 0, h = 0;
         } m;
 };

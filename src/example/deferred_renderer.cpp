@@ -83,7 +83,7 @@ void deferred_renderer::initFBO(int w, int h, std::initializer_list<texture::tex
         m.FB.bind();
         for (auto A: Attachments)
         {
-                if (A.format == GL_DEPTH_COMPONENT)
+                if (A.format == GL_DEPTH_COMPONENT || A.format == GL_DEPTH_STENCIL)
                         m.FB.gen_depth_attachment(A);
                 else
                         m.FB.gen_color_attachment(A);
@@ -111,7 +111,7 @@ void deferred_renderer::init(const std::filesystem::path& vShader, const std::fi
         {GL_TEXTURE_2D, 1, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //normal
         {GL_TEXTURE_2D, 2, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //pos
         {GL_TEXTURE_2D, 3, GL_RG,  GL_RG16F, GL_FLOAT,           (unsigned int)w, (unsigned int)h}, //roughness_metallic
-        //m.FB.gen_depth_attachment({GL_TEXTURE_2D, 3, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT32F, GL_FLOAT, m.FB.getWidth(), m.FB.getHeight()});
+        {GL_TEXTURE_2D, 4, GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, (unsigned int)w, (unsigned int)h}
         });
 
 }

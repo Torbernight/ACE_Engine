@@ -59,20 +59,6 @@ vec3 reinhard_extended_luminance(in vec3 v, in float max_white_l)
     return change_luminance(v, l_new);
 }
 
-vec4 blerp(vec2 texcoords, vec2 resolution, sampler2D tex)
-{
-        vec2 tc = texcoords*resolution/2;
-        vec2 a00 = 2*floor(tc)/resolution;
-        vec2 a11 = 2*ceil(tc)/resolution;
-        vec2 a01 = vec2(a00.x, a11.y);
-        vec2 a10 = vec2(a11.x, a00.y);
-        vec2 fr = fract(tc);
-
-        return mix(
-                mix(texture(tex, a00),texture(tex, a10),fr.x),
-                mix(texture(tex, a01),texture(tex, a11),fr.x),fr.y);
-}
-
 void main()
 {
         vec2 resolution = textureSize(uScreen, 0).xy;

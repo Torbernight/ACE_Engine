@@ -15,7 +15,15 @@ layout(binding=0) uniform sampler2D uAlbedo;
 layout(binding=1) uniform sampler2D uNormal;
 layout(binding=2) uniform sampler2D uPosition;
 layout(binding=3) uniform sampler2D uRoughness_Metallic;
-//layout(binding=4) uniform sampler2D uDepth;
+layout(binding=4) uniform sampler2D uDepth;
+
+float LinearizeDepth(float depth) 
+{
+    const float near = 0.1;
+    const float far = 1000.0;
+    float z = depth * 2.0 - 1.0; // back to NDC 
+    return (2.0 * near * far) / (far + near - z * (far - near));	
+}
 
 vec3 compute_pointLight(in lightSource L, in vec3 normal, in vec3 pos, in vec3 albedo)
 {
@@ -83,4 +91,8 @@ void main()
         color += BRDF(H, V, normal, Ldir, roughness, metallic, albedo, radiance);
     }
     oColor = vec4(color, 1.0);
+    
+    float cd = 0.1*LinearizeDepth(texture(uDepth, iTexCoords).r);
+    float fog = exp2(-cd*cd);
+    oColor.rgb = mix(vec3(0), oColor.rgb, fog);
 }

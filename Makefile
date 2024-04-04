@@ -6,8 +6,8 @@ GLSFLAGS=-G
 DBGFLAGS=-g
 RLSFLAGS=-O3 -DNDEBUG
 
-CFLAGS:=-c -Wall $(RLSFLAGS) -MMD
-CXXFLAGS:=-c -Wall $(RLSFLAGS) -MMD -fms-extensions
+CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
+CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
 CSOURCE := $(wildcard src/*.c) $(wildcard src/example/*.c) 
 CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp) $(wildcard src/imgui/*.cpp) src/imgui/backends/imgui_impl_sdl2.cpp src/imgui/backends/imgui_impl_opengl3.cpp src/imgui/misc/cpp/imgui_stdlib.cpp

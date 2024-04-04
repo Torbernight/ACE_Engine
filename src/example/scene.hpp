@@ -34,7 +34,7 @@ struct material_buffer
 {
     int Albedo;
     int Normal;
-    int Roughness;
+    int Roughness_metallic;
 };
 
 class scene
@@ -49,7 +49,8 @@ class scene
         float Brightness = 0.604;
         float Contrast = 1.828;
         float Saturation = 0.686;
-        float Gamma = 2.302;
+        float Gamma = 2.2;
+        float Exposure = 271.7570653294113;
     } postprocess;
 
     static scene* import_scene(const path& pFile);
@@ -107,6 +108,7 @@ class scene
     }m;
 
     static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);
+    static mesh combine_meshes(mesh& A, mesh& B);
     void process_node(const aiNode* Node, const aiScene* Scene);
     void process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform);
 };

@@ -1,56 +1,29 @@
 #include <GL/glew.h>
 #include <thread>
+#include <algorithm>
 #include "scene.hpp"
+#include "scene_helper.hpp"
 
-inline static vec3 cast3D(const aiVector3D &V)
-{
-    return vec3(V.x, V.y, V.z);
-}
-inline static vec4 cast4D(const aiColor3D &V)
-{
-    return vec4(V.r, V.g, V.b, 1.0f);
-}
-inline static vec2 cast2D(const aiVector3D &V)
-{
-    return vec2(V.x, V.y);
-}
-inline static glm::mat4 cast4x4(const aiMatrix4x4 &M)
-{
-    glm::mat4 Result(1);
-    for(int i = 0; i < 4; i++) {
-        for(int j = 0; j < 4; j++) {
-            Result[i][j] = M[j][i];
-        }
-    }
-    return Result;
-}
 
-inline static
-void process_faces(const aiMesh* Mesh, std::vector<uint32_t> *indices)
+mesh scene::combine_meshes(mesh& A, mesh& B)
 {
-    for (int n = 0; n < Mesh->mNumFaces; n++)
-    {
-        const aiFace &F = Mesh->mFaces[n];
-        for(int i = 0; i < F.mNumIndices; i++)
-        {
-            indices->push_back(F.mIndices[i]);
-        }
-    }
-}
+    mesh AB;
+    A.apply_transform();
+    B.apply_transform();
 
-inline static
-void process_vertices(const aiMesh* Mesh, std::vector<mesh::vertex> *vertices)
-{
-    for (int n = 0; n < Mesh->mNumVertices; n++)
-    {
-        mesh::vertex V;
-        V.position  = cast3D(Mesh->mVertices[n]);
-        V.texcoord  = cast2D(Mesh->mTextureCoords[0][n]);
-        V.normal    = cast3D(Mesh->mNormals[n]);
-        V.tangent   = cast3D(Mesh->mTangents[n]);
-        V.bitangent = cast3D(Mesh->mBitangents[n]);
-        vertices->push_back(V);
-    }
+    AB.vertices.reserve(A.vertices.size() + B.vertices.size());
+    AB.vertices.insert(AB.vertices.end(), A.vertices.begin(), A.vertices.end());
+    AB.vertices.insert(AB.vertices.end(), B.vertices.begin(), B.vertices.end());
+    AB.indices.reserve(A.indices.size() + B.indices.size() + 1);
+    AB.indices.insert(AB.indices.end(), A.indices.begin(), A.indices.end());
+    AB.indices.push_back(UINT32_MAX);
+    for(auto I : B.indices)
+        AB.indices.push_back(I+A.vertices.size());
+
+    AB.materialIndex = A.materialIndex;
+    AB.transform = glm::mat4(1.0f);
+    AB.join_identical_vertices();
+    return AB;
 }
 
 mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
@@ -148,18 +121,36 @@ scene* scene::import_scene(const path& pFile)
         Scene->Lights[n].outer_cone = iLight->mAngleOuterCone;
         Scene->Lights[n].type = (unsigned int)iLight->mType;
     }
+
     for(int n = 0; n < nMats; n++)
     {
         aiMaterial *M = S->mMaterials[n];
+        material_buffer matBuff;
         
-        aiString AlbedoPath, NormalPath, RoughnessPath;
-        M->GetTexture(aiTextureType_BASE_COLOR, 0, &AlbedoPath);
-        M->GetTexture(aiTextureType_NORMALS, 0, &NormalPath);
-        M->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &RoughnessPath);
-        if (AlbedoPath.length == 0 || NormalPath.length == 0 || RoughnessPath.length == 0)
-            continue;
+
+        matBuff.Albedo = M->GetTextureCount(aiTextureType_BASE_COLOR) == 0 ? -1 : 0;
+        matBuff.Normal = M->GetTextureCount(aiTextureType_NORMALS) == 0 ? -1 : 0;
+        matBuff.Roughness_metallic = M->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) == 0 ? -1 : 0;
+
         Material Mat;
-        Mat.load(pFile.parent_path() / AlbedoPath.C_Str(), pFile.parent_path() / NormalPath.C_Str(), pFile.parent_path() / RoughnessPath.C_Str());
+
+        if (0 == matBuff.Albedo){
+            aiString AlbedoPath;
+            M->GetTexture(aiTextureType_BASE_COLOR, 0, &AlbedoPath);
+            matBuff.Albedo = Mat.loadAlbedo(pFile.parent_path() / AlbedoPath.C_Str()).get_slot();
+        }
+        if (0 == matBuff.Normal){
+            aiString NormalPath;
+            M->GetTexture(aiTextureType_NORMALS, 0, &NormalPath);
+            matBuff.Normal = Mat.loadNormal(pFile.parent_path() / NormalPath.C_Str()).get_slot();
+        }
+        if (0 == matBuff.Roughness_metallic){
+            aiString RoughnessPath;
+            M->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &RoughnessPath);
+            matBuff.Roughness_metallic = Mat.loadRoughness(pFile.parent_path() / RoughnessPath.C_Str()).get_slot();
+        }
+
+        Scene->m.Materials.push_back(matBuff);
         Scene->Materials.push_back(Mat);
     }
 
@@ -170,7 +161,24 @@ scene* scene::import_scene(const path& pFile)
     }
 
     Scene->process_node(S->mRootNode, S);
-    
+
+    for(auto it = Scene->Meshes.begin(); it < Scene->Meshes.end(); it++)
+    {
+        auto res = it;
+
+        while(res != Scene->Meshes.end())
+        {
+            res = std::find_if(it+1, Scene->Meshes.end(), [it](mesh& M){return it->materialIndex == M.materialIndex && !M.discard;});
+            if (res == Scene->Meshes.end())
+                break;
+
+            *it = scene::combine_meshes(*it, *res);
+            res->discard = true;
+        }
+    }
+
+    Scene->Meshes.erase(std::remove_if(Scene->Meshes.begin(), Scene->Meshes.end(), [](mesh& m){return m.discard;}));
+
     return Scene;
 }
 
@@ -199,15 +207,6 @@ void scene::setUBO()
     m.UBO.generate();
     m.UBO.bufferData(Lights.size()*sizeof(light), Lights.data(), GL_DYNAMIC_DRAW);
     m.UBO.bindBufferBase(2);
-
-    for(auto &M : Materials)
-    {
-        material_buffer mat;
-        mat.Albedo = M.get_albedo().get_slot();
-        mat.Normal = M.get_normal().get_slot();
-        mat.Roughness = M.get_roughness().get_slot();
-        m.Materials.push_back(mat);
-    }
 
     m.mBuffer.generate();
     m.mBuffer.bufferData(sizeof(material_buffer), nullptr, GL_DYNAMIC_DRAW);

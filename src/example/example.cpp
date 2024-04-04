@@ -1,5 +1,5 @@
 #include <iostream>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
@@ -36,7 +36,7 @@ class MyGame : public application
 
     void init_imgui()
     {
-        ImGuiContext* context = ImGui::CreateContext();
+        ImGui::CreateContext();
         ImGui_ImplSDL2_InitForOpenGL(this->win.getHandle(), this->win.getContext());
         ImGui_ImplOpenGL3_Init();
         imgui_IO = &ImGui::GetIO();
@@ -48,8 +48,9 @@ class MyGame : public application
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(MessageCallback, nullptr);
 #endif
+        glEnable(GL_PRIMITIVE_RESTART);
+        glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
@@ -191,6 +192,7 @@ class MyGame : public application
         postProc_Update |= ImGui::DragFloat("Contrast", &gameScene->postprocess.Contrast, 0.025, 0.0, 2.0);
         postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
         postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
+        postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, FLT_MIN, FLT_MAX);
 
         if (postProc_Update)
             gameScene->updatePostProcessBuffer();
@@ -234,7 +236,7 @@ class MyGame : public application
                     processKeyEvents(E.key);
                     break;
                 case SDL_TEXTINPUT:
-                    if (imgui_IO->WantCaptureKeyboard){
+                    if (imgui_IO->WantTextInput){
                         ImGui_ImplSDL2_ProcessEvent(&E);
                     }
                     break;

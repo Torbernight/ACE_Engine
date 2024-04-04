@@ -37,7 +37,8 @@
 				4,
 				5,
 				6,
-				7
+				7,
+				8
 			]
 		}
 	],
@@ -116,7 +117,7 @@
 		},
 		{
 			"mesh":4,
-			"name":"Plane"
+			"name":"Floor"
 		},
 		{
 			"camera":0,
@@ -140,11 +141,25 @@
 		},
 		{
 			"mesh":5,
-			"name":"Plane.001",
+			"name":"Ceil",
 			"translation":[
 				0,
 				2.5,
 				0
+			]
+		},
+		{
+			"mesh":6,
+			"name":"Door",
+			"scale":[
+				1,
+				1,
+				0.5
+			],
+			"translation":[
+				8.802383422851562,
+				1,
+				0.31917333602905273
 			]
 		}
 	],
@@ -190,6 +205,21 @@
 				"metallicFactor":0,
 				"metallicRoughnessTexture":{
 					"index":5
+				}
+			}
+		},
+		{
+			"doubleSided":true,
+			"name":"Rusty metal",
+			"normalTexture":{
+				"index":6
+			},
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":7
+				},
+				"metallicRoughnessTexture":{
+					"index":8
 				}
 			}
 		}
@@ -284,6 +314,21 @@
 					"material":1
 				}
 			]
+		},
+		{
+			"name":"Plane.002",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":26,
+						"NORMAL":27,
+						"TEXCOORD_0":28,
+						"TANGENT":29
+					},
+					"indices":21,
+					"material":2
+				}
+			]
 		}
 	],
 	"textures":[
@@ -310,6 +355,18 @@
 		{
 			"sampler":0,
 			"source":5
+		},
+		{
+			"sampler":0,
+			"source":6
+		},
+		{
+			"sampler":0,
+			"source":7
+		},
+		{
+			"sampler":0,
+			"source":8
 		}
 	],
 	"images":[
@@ -342,6 +399,21 @@
 			"mimeType":"image/png",
 			"name":"degraded-concrete_roughness",
 			"uri":"textures/degraded-concrete_roughness.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"rustediron2_normal",
+			"uri":"textures/rustediron2_normal.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"rustediron2_basecolor",
+			"uri":"textures/rustediron2_basecolor.png"
+		},
+		{
+			"mimeType":"image/png",
+			"name":"rustediron2_metallic-rustediron2_roughness",
+			"uri":"textures/rustediron2_metallic-rustediron2_roughness.png"
 		}
 	],
 	"accessors":[
@@ -560,6 +632,40 @@
 			"componentType":5126,
 			"count":4,
 			"type":"VEC4"
+		},
+		{
+			"bufferView":26,
+			"componentType":5126,
+			"count":4,
+			"max":[
+				8.742277657347586e-08,
+				1,
+				1
+			],
+			"min":[
+				-8.742277657347586e-08,
+				-1,
+				-1
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":27,
+			"componentType":5126,
+			"count":4,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":28,
+			"componentType":5126,
+			"count":4,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":29,
+			"componentType":5126,
+			"count":4,
+			"type":"VEC4"
 		}
 	],
 	"bufferViews":[
@@ -718,6 +824,30 @@
 			"byteLength":64,
 			"byteOffset":5012,
 			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":48,
+			"byteOffset":5076,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":48,
+			"byteOffset":5124,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":32,
+			"byteOffset":5172,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":64,
+			"byteOffset":5204,
+			"target":34962
 		}
 	],
 	"samplers":[
@@ -728,7 +858,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":5076,
+			"byteLength":5268,
 			"uri":"test.bin"
 		}
 	]

@@ -26,18 +26,19 @@ float GeometrySmith(float cosNV, float cosNL, float roughness)
     return GeometrySchlickGGX(cosNV, roughness) * GeometrySchlickGGX(cosNL, roughness);
 }
 
-vec3 BRDF(vec3 H, vec3 V, vec3 N, vec3 L, float roughness, vec3 albedo, vec3 radiance)
+vec3 BRDF(vec3 H, vec3 V, vec3 N, vec3 L, float roughness, float metallic, vec3 albedo, vec3 radiance)
 {
         float alpha = roughness*roughness;
         float cosHV = max(0, dot(H,V));
         float cosNH = max(0, dot(N,H));
         float cosNL = max(0, dot(N,L));
         float cosNV = max(0, dot(N,V));
-        vec3 F = fresnel(cosHV, vec3(0.04));
+        vec3 F0 = mix(vec3(0.04), albedo, metallic);
+        vec3 F = fresnel(cosHV, F0);
         float D = GGX(cosNH, alpha);
         float G = GeometrySmith(cosNV, cosNL, roughness); 
         vec3 specular = D*G*F / (4.0 * cosNV * cosNL  + 0.0001);  
         vec3 kS = F;
-        vec3 kD = vec3(1.0) - kS;
+        vec3 kD = (1.0 - kS) * (1.0 - metallic);
         return (kD * albedo / M_PI + specular) * radiance * cosNL;
 }

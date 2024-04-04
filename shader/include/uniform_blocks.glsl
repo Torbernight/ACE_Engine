@@ -16,7 +16,7 @@ layout(std140, binding = 3) uniform Materials
 {
     int albedo_index;
     int normal_index;
-    int roughness_index;
+    int roughness_metallic_index;
 };
 
 layout(binding=4, std140) uniform postProcess
@@ -25,4 +25,5 @@ layout(binding=4, std140) uniform postProcess
         float uContrast;
         float uSaturation;
         float uGamma;
+        float uExposure;
 };

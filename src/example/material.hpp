@@ -11,38 +11,42 @@ class Material
 {
     public:
 
-    void load(const path& albedo, const path& normal, const path& roughness)
+    void load(const path& albedo, const path& normal, const path& roughness, const path& metallic)
     {
-        image_data alb_data = process_image_data(load_image(albedo));
-        image_data nor_data = process_image_data(load_image(normal));
-        image_data roug_data = process_image_data(load_image(roughness));
-        set_texture(m.Albedo, alb_data, last_slot++);
-        set_texture(m.Normal, nor_data, last_slot++);
-        set_texture(m.Roughness, roug_data, last_slot++);
+        loadAlbedo(albedo);
+        loadNormal(normal);
+        loadRoughness(roughness);
     }
 
-    void loadAlbedo(const path& albedo)
+    texture& loadAlbedo(const path& albedo)
     {
         image_data alb_data = process_image_data(load_image(albedo));
         set_texture(m.Albedo, alb_data, last_slot++);
+        return m.Albedo;
     }
 
-    void loadNormal(const path& normal)
+    texture& loadNormal(const path& normal)
     {
         image_data nor_data = process_image_data(load_image(normal));
         set_texture(m.Normal, nor_data, last_slot++);
+        return m.Normal;
     }
 
-    void loadRoughness(const path& roughness)
+    texture& loadRoughness(const path& roughness)
     {
         image_data roug_data = process_image_data(load_image(roughness));
         set_texture(m.Roughness, roug_data, last_slot++);
+        return m.Roughness;
     }
 
     void bind()
     {
-        m.Albedo.bind_unit();
-        m.Normal.bind_unit();
+        if (m.Albedo) 
+            m.Albedo.bind_unit();
+        if (m.Normal) 
+            m.Normal.bind_unit();
+        if (m.Roughness) 
+            m.Roughness.bind_unit();
     }
 
     texture& get_albedo()

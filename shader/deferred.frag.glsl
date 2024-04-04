@@ -14,7 +14,7 @@ layout(location=0) out vec4 oColor;
 layout(binding=0) uniform sampler2D uAlbedo;
 layout(binding=1) uniform sampler2D uNormal;
 layout(binding=2) uniform sampler2D uPosition;
-layout(binding=3) uniform sampler2D uRoughness;
+layout(binding=3) uniform sampler2D uRoughness_Metallic;
 //layout(binding=4) uniform sampler2D uDepth;
 
 vec3 compute_pointLight(in lightSource L, in vec3 normal, in vec3 pos, in vec3 albedo)
@@ -50,7 +50,9 @@ void main()
     vec3 albedo = texture(uAlbedo, iTexCoords).rgb;
     vec3 normal = texture(uNormal, iTexCoords).rgb;
     vec3 position = texture(uPosition, iTexCoords).rgb;
-    float roughness = texture(uRoughness, iTexCoords).r;
+    vec2 RM = texture(uRoughness_Metallic, iTexCoords).rg;
+    float roughness = RM.x;
+    float metallic = 1.0 - RM.y;
 
     vec3 color = vec3(0.0);
     for(int i = 0; i < nLights; i++)
@@ -72,13 +74,13 @@ void main()
                 radiance = compute_spotLight(L, normal, position, albedo);
                 Ldir = normalize(L.position - position);
                 break;
-            //case LIGHT_AMBIENT:
-            //    radiance = compute_ambientLight(L);
-            //    break;
+            case LIGHT_AMBIENT:
+                color += albedo*compute_ambientLight(L);
+                break;
         }
         vec3 V = normalize(position - u_CamPos.xyz);
         vec3 H = normalize(V + normal);
-        color += BRDF(H, V, normal, Ldir, roughness, albedo, radiance);
+        color += BRDF(H, V, normal, Ldir, roughness, metallic, albedo, radiance);
     }
     oColor = vec4(color, 1.0);
 }

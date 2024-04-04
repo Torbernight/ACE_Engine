@@ -1,4 +1,7 @@
 #include <GL/glew.h>
+#include <SDL.h>
+#include <iostream>
+#include "debug.hpp"
 #include "material.hpp"
 
 int Material::last_slot = 0;
@@ -49,6 +52,20 @@ image_data Material::process_image_data(const image_data& data)
             D.format = GL_RED;
             D.internal_format = GL_R32F;
             break;
+        case FIT_RGBA16:
+            D.type =  GL_UNSIGNED_SHORT;
+            D.format = GL_RGBA;
+            D.internal_format = GL_RGBA16;
+            break;
+        case FIT_RGB16:
+            D.type =  GL_UNSIGNED_SHORT;
+            D.format = GL_RGB;
+            D.internal_format = GL_RGB16UI;
+            break;
+        default:
+            std::cerr << "Warning! unidentified format!" << std::endl;
+            BREAKPOINT();
+
     }
     return D;
 }

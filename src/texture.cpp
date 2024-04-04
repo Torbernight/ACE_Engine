@@ -13,7 +13,8 @@ void texture::generate()
 
 void texture::bind_unit()
 {
-        glBindTextureUnit(m.slot, m.texture);
+        if (m.texture != 0)
+                glBindTextureUnit(m.slot, m.texture);
 }
 
 void texture::bind()

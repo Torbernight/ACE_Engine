@@ -13,11 +13,18 @@ layout(location=4) in vec3 iBitangent;
 layout(location=0) out vec4 oAlbedo;
 layout(location=1) out vec3 oNormal;
 layout(location=2) out vec3 oPosition;
-layout(location=3) out float oRoughness;
+layout(location=3) out vec2 oRoughness_Metallic;
 
 #include "uniform_blocks.glsl"
 
-layout(binding=0) uniform sampler2D TextureArray[nMaterials*3];
+layout(binding=0) uniform sampler2D TextureArray[nMaterials*4];
+
+vec3 get_albedo()
+{
+    if (albedo_index < 0)
+        return vec3(0.0);
+    return texture(TextureArray[albedo_index], iTexCoords).rgb;
+}
 
 vec3 get_normal()
 {
@@ -27,19 +34,18 @@ vec3 get_normal()
     (texture(TextureArray[normal_index], iTexCoords).xyz*2.0-1.0);
 }
 
-float get_roughness()
+vec2 get_roughness_metallic()
 {
-    if (roughness_index < 0)
-        return 0.0;
-    return texture(TextureArray[roughness_index], iTexCoords).r;
-
+    if (roughness_metallic_index < 0)
+        return vec2(0.0);
+    return texture(TextureArray[roughness_metallic_index], iTexCoords).gb;
 }
+
 
 void main()
 {
-    vec3 albedo = texture(TextureArray[albedo_index], iTexCoords).rgb;
-    oAlbedo = vec4(albedo, 1.0);
+    oAlbedo = vec4(get_albedo(), 1.0);
     oNormal = normalize(get_normal());
-    oRoughness = get_roughness();
+    oRoughness_Metallic = get_roughness_metallic();
     oPosition = iPos;
 }

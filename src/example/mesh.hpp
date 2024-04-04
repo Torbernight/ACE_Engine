@@ -23,6 +23,16 @@ class mesh
         glm::vec3 normal;
         glm::vec3 tangent;
         glm::vec3 bitangent;
+
+        bool operator==(const vertex& V) const
+        {
+            return
+            position == V.position &&
+            texcoord == V.texcoord &&
+            normal == V.normal &&
+            tangent == V.tangent &&
+            bitangent == V.bitangent;
+        }
     };
     
     vertexArray VAO;
@@ -33,6 +43,10 @@ class mesh
     AABB bounding_box;
     glm::mat4 transform;
     unsigned int materialIndex = 0;
+    bool discard = false;
+
+    void apply_transform();
+    void join_identical_vertices();
 
     mesh()
     : 

@@ -179,10 +179,8 @@ void shaderProgram::get_status()
         glGetProgramiv(m.ProgramID, GL_LINK_STATUS, &status);
         if (GL_FALSE == status)
         {
-                int size;
-                glGetProgramInfoLog(m.ProgramID, 0, &size, nullptr);
-                char *log = new char[size];
-                glGetProgramInfoLog(m.ProgramID, size, nullptr, log);
+                char *log = new char[512];
+                glGetProgramInfoLog(m.ProgramID, 512, nullptr, log);
                 std::cerr << "Error: program not linked!\n" << log << std::endl;
                 delete[] log;
         }

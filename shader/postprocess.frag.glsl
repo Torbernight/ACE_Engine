@@ -46,6 +46,11 @@ vec3 change_luminance(vec3 c_in, float l_out)
     return c_in * (l_out / l_in);
 }
 
+vec3 reinhard_extended(vec3 v, float max_white)
+{
+    return v * (1.0 + (v / max_white * max_white)) / (1.0 + v);
+}
+
 vec3 reinhard_extended_luminance(in vec3 v, in float max_white_l)
 {
     float l_old = luminance(v);
@@ -73,7 +78,7 @@ void main()
         vec2 resolution = textureSize(uScreen, 0).xy;
         vec3 color = texture(uScreen, iTexCoords).rgb;
 
-        color = clamp(reinhard_extended_luminance(color, 2717.570653294113), vec3(0),vec3(1));
+        color = clamp(reinhard_extended_luminance(color, uExposure), vec3(0),vec3(1));
         color = applyContrastandBrigtness(color, uContrast, uBrightness);
         color = applySaturation(color, uSaturation);
 

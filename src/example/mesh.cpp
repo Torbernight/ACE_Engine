@@ -57,5 +57,4 @@ void mesh::render()
     VAO.bind();
     EBO.bind();
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
-    VAO.unbind();
 }

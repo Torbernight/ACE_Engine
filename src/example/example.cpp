@@ -68,7 +68,9 @@ class MyGame : public application
             win.set_shouldClose(true);
             return;
         }
-        gameScene->loadShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
+        gameScene->load_SceneShader("shader/scene.vert.spv", "shader/scene.frag.spv");
+        gameScene->load_DeferredShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
+        gameScene->load_PostProcShader("shader/deferred.vert.spv", "shader/postprocess.frag.spv");
         gameScene->setUBO();
         gameScene->initMeshes();
         gameScene->initDRenderer(win.getWidth(), win.getHeight());

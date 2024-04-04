@@ -54,7 +54,19 @@ class scene
     } postprocess;
 
     static scene* import_scene(const path& pFile);
-    void loadShader(const path& vertex, const path& fragment);
+
+    void load_DeferredShader(const path& vertex, const path& fragment);
+    void load_SceneShader(const path& vertex, const path& fragment)
+    {
+        m.scene_vShader = vertex;
+        m.scene_fShader = fragment;
+    }
+    void load_PostProcShader(const path& vertex, const path& fragment)
+    {
+        m.postProcess_vShader = vertex;
+        m.postProcess_fShader = fragment;
+    }
+
     void setUBO();
     void initMeshes();
     void initDRenderer(int w, int h);
@@ -97,6 +109,14 @@ class scene
         shaderProgram sProgram;
 
         glm::vec3 defaultCamPos = glm::vec3(0.0f/0.0f);
+
+        path scene_vShader = "";
+        path scene_fShader = "";
+        path deferred_vShader = "";
+        path deferred_fShader = "";
+        path postProcess_vShader = "";
+        path postProcess_fShader = "";
+
 
         members(): 
         UBO(GL_UNIFORM_BUFFER), 

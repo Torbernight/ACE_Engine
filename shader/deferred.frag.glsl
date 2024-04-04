@@ -92,7 +92,7 @@ void main()
     }
     oColor = vec4(color, 1.0);
     
-    float cd = 0.1*LinearizeDepth(texture(uDepth, iTexCoords).r);
+    float cd = 0.025*LinearizeDepth(texture(uDepth, iTexCoords).r);
     float fog = exp2(-cd*cd);
     oColor.rgb = mix(vec3(0), oColor.rgb, fog);
 }

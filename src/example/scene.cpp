@@ -182,8 +182,11 @@ scene* scene::import_scene(const path& pFile)
     return Scene;
 }
 
-void scene::loadShader(const path& vertex, const path& fragment)
+void scene::load_DeferredShader(const path& vertex, const path& fragment)
 {
+    m.deferred_vShader = vertex;
+    m.deferred_fShader = fragment;
+
     m.vShader.loadBinary(vertex);
     m.fShader.loadBinary(fragment);
     for(int i = 0; i < m.init_constants.size(); i++)
@@ -222,20 +225,17 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     m.DRenderer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)
-    {
         M.bind();
-    }
+
     for(auto& M : Meshes)
     {
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
         Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.transform[0][0]);
         M.render();
     }
-    m.DRenderer.unbind();
     m.PostProcRenderer.m.FB.bind();
     m.sProgram.use();
     m.DRenderer.render(m.PostProcRenderer.m.w, m.PostProcRenderer.m.h);
-    m.sProgram.unuse();
     m.PostProcRenderer.m.FB.unbind();
     m.PostProcRenderer.m.sProgram.use();
     m.PostProcRenderer.render(m.DRenderer.m.w, m.DRenderer.m.h);
@@ -245,13 +245,11 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 void scene::initMeshes()
 {
     for(auto& M : Meshes)
-    {
         M.init();
-    }
 }
 
 void scene::initDRenderer(int w, int h)
 {
-    m.DRenderer.init("shader/scene.vert.spv", "shader/scene.frag.spv", Materials.size(), w, h);
-    m.PostProcRenderer.initPostProc("shader/deferred.vert.spv", "shader/postprocess.frag.spv", w/2,h/2);
+    m.DRenderer.init(m.scene_vShader, m.scene_fShader, Materials.size(), w, h);
+    m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w/2,h/2);
 }

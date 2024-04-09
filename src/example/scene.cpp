@@ -154,10 +154,23 @@ scene* scene::import_scene(const path& pFile)
         Scene->Materials.push_back(Mat);
     }
 
+
     if(S->HasCameras())
     {
         aiMatrix4x4 Transform = getTransform(S->mCameras[0]->mName, S);
         Scene->m.defaultCamPos = cast3D(Transform * S->mCameras[0]->mPosition);
+    }
+
+    if (S->hasSkeletons())
+    {
+        unsigned int numSkeletons = S->mNumSkeletons;
+        
+        //S->mSkeletons[0]->mBones[0]->mMeshId
+    }
+
+    if (S->HasAnimations())
+    {
+        //S->mAnimations[0]->mChannels[0]->mPostState.
     }
 
     Scene->process_node(S->mRootNode, S);

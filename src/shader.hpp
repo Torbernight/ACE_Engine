@@ -37,6 +37,8 @@ class Shader
     void loadBinary(const std::filesystem::path&);
     void loadBinary();
 
+    void loadEmbedded(const uint32_t* data, size_t len);
+
     void specialize();
 
     unsigned int getShaderID() const
@@ -45,6 +47,7 @@ class Shader
     }
 
     Shader(ShaderStage stage);
+    Shader(ShaderStage stage, const uint32_t* bin, size_t size);
     Shader(ShaderStage stage, const std::filesystem::path&);
     Shader(Shader&);
     Shader(Shader&&);

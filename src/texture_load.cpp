@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <SDL_assert.h>
 #include "texture_load.hpp"
 
 image_data load_image(const std::filesystem::path& P)
@@ -8,6 +9,7 @@ image_data load_image(const std::filesystem::path& P)
         if (!image.load(P.c_str(), 0))
         {
                 std::cerr << "ERROR: couldn't load image at " << P << "\n";
+                SDL_assert(false);
                 return {};
         }
         image_data data;

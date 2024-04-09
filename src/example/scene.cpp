@@ -4,12 +4,22 @@
 #include "scene.hpp"
 #include "scene_helper.hpp"
 
+void scene::combine_as_instance(mesh& A, mesh& Instance)
+{
+    A.nInstances += Instance.nInstances;
+    for (int n = 0; n < Instance.nInstances; n++)
+    {
+        A.transforms.push_back(Instance.transforms[n]);
+    }
+    Instance.discard = true;
+}
 
-mesh scene::combine_meshes(mesh& A, mesh& B)
+void scene::combine_meshes(mesh& A, mesh& B)
 {
     mesh AB;
     A.apply_transform();
     B.apply_transform();
+    AB.bounding_box = AABB(A.bounding_box,B.bounding_box);
 
     AB.vertices.reserve(A.vertices.size() + B.vertices.size());
     AB.vertices.insert(AB.vertices.end(), A.vertices.begin(), A.vertices.end());
@@ -21,23 +31,27 @@ mesh scene::combine_meshes(mesh& A, mesh& B)
         AB.indices.push_back(I+A.vertices.size());
 
     AB.materialIndex = A.materialIndex;
-    AB.transform = glm::mat4(1.0f);
+    AB.Name = A.Name;
+    AB.transforms.push_back(glm::mat4(1.0f));
     AB.join_identical_vertices();
-    return AB;
+    B.discard = true;
+    A = AB;
 }
 
 mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
 {
     mesh M;
+    M.Name = Mesh->mName.C_Str();
 
     M.vertices.reserve(Mesh->mNumVertices);
     M.indices.reserve(Mesh->mNumFaces*3);
+
     std::thread Tfaces(process_faces, Mesh, &M.indices);
     std::thread Tverts(process_vertices, Mesh, &M.vertices);
 
     M.bounding_box.max = cast3D(Mesh->mAABB.mMax);
     M.bounding_box.min = cast3D(Mesh->mAABB.mMin);
-    M.transform = cast4x4(Transform);
+    M.transforms.push_back(cast4x4(Transform));
     M.materialIndex = Mesh->mMaterialIndex;
 
     Tfaces.join();
@@ -86,12 +100,165 @@ aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
     return Transform;
 }
 
+void scene::find_instances()
+{
+    auto it = Meshes.begin();
+    auto find_inst = [&it](mesh& M){return *it == M && !M.discard;};
+    for(; it < Meshes.end(); it++)
+    {
+        auto res = it;
+        while((res = std::find_if(it+1, Meshes.end(), find_inst)) != Meshes.end())
+        {
+            scene::combine_as_instance(*it, *res);
+        }
+    }
+}
+void scene::find_batchable()
+{
+    auto it = Meshes.begin();
+    auto find_batch = [&it](mesh& M){return M.nInstances == 1 && it->materialIndex == M.materialIndex && !M.discard;};
+    for(; it < Meshes.end(); it++)
+    {
+        if (it->nInstances > 1)
+            continue;
+        
+        auto res = it;
+        while((res = std::find_if(it+1, Meshes.end(), find_batch)) != Meshes.end())
+        {
+            scene::combine_meshes(*it, *res);
+        }
+    }
+}
+
+void scene::load_camera(const aiScene* S)
+{
+    if(S->HasCameras())
+    {
+        const auto& aiCam = *S->mCameras[0];
+        aiMatrix4x4 Transform = getTransform(aiCam.mName, S);
+        aiMatrix3x3 vTransform = aiMatrix3x3(Transform);
+        camera::members& cam = m.defaultCamera.m;
+        cam.pos = cast3D(Transform * aiCam.mPosition);
+        cam.zNear = aiCam.mClipPlaneNear;
+        cam.zFar = aiCam.mClipPlaneFar;
+        cam.aspect = aiCam.mAspect;
+        cam.FOVy = h_fov_to_v_fov(aiCam.mHorizontalFOV, cam.aspect);
+        cam.up =    glm::normalize(cast3D(vTransform * aiCam.mUp));
+        cam.front = glm::normalize(cast3D(vTransform * aiCam.mLookAt));
+        cam.right = glm::normalize(glm::cross(cam.front, cam.up));
+    }
+    else{
+        m.defaultCamera.m.pos = glm::vec3(0.0/0.0);
+    }
+}
+
+void scene::load_lights(const aiScene* S)
+{
+    unsigned int nLights = S->mNumLights;
+    this->m.init_constants.push_back(nLights);
+    this->Lights.resize(nLights);
+    for(int n = 0; n < nLights; n++)
+    {
+        const aiLight *iLight = S->mLights[n];
+        aiMatrix4x4 Transform = getTransform(iLight->mName, S);
+        this->Lights[n].position = cast3D(Transform * iLight->mPosition);
+        this->Lights[n].attenuation.x = iLight->mAttenuationConstant;
+        this->Lights[n].attenuation.y = iLight->mAttenuationLinear;
+        this->Lights[n].attenuation.z = iLight->mAttenuationQuadratic;
+        this->Lights[n].color = cast4D(iLight->mColorDiffuse);
+        this->Lights[n].direction = glm::normalize(cast3D(aiMatrix3x3(Transform) * iLight->mDirection));
+        this->Lights[n].inner_cone = iLight->mAngleInnerCone;
+        this->Lights[n].outer_cone = iLight->mAngleOuterCone;
+        this->Lights[n].type = (unsigned int)iLight->mType;
+    }
+}
+
+inline static 
+int get_albedo(const path& P, Material& Mat)
+{
+    return Mat.loadAlbedo(P).get_slot();
+}
+inline static 
+int get_normal(const path& P, Material& Mat)
+{
+    return Mat.loadNormal(P).get_slot();
+}
+inline static 
+int get_roughness(const path& P, Material& Mat)
+{
+    return Mat.loadRoughness(P).get_slot();
+}
+
+void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat)
+{
+    int* texture = nullptr;
+    int (*load_fun)(const path&, Material&) = nullptr;
+
+    switch(Type)
+    {
+        case aiTextureType_BASE_COLOR:
+            texture = &matBuff.Albedo;
+            load_fun = get_albedo;
+            break;
+        case aiTextureType_NORMALS:
+            texture = &matBuff.Normal;
+            load_fun = get_normal;
+            break;
+        case aiTextureType_DIFFUSE_ROUGHNESS:
+            texture = &matBuff.Roughness_metallic;
+            load_fun = get_roughness;
+            break;
+        default:
+            return;
+    }
+    if (M->GetTextureCount(Type))
+    {
+        aiString texture_path;
+        M->GetTexture(Type, 0, &texture_path);
+        path P = parentPath / texture_path.C_Str();
+        *texture = load_fun(P, Mat);
+    } else {
+        *texture = -1;
+    }
+}
+
+void scene::load_materials(const aiScene* S, const path& pFile)
+{
+    unsigned int nMats = S->mNumMaterials;
+    path parentPath = pFile.parent_path();
+    for(int n = 0; n < nMats; n++)
+    {
+        const aiMaterial *M = S->mMaterials[n];
+        material_buffer matBuff;
+        Material Mat;
+
+        getTexture(aiTextureType_BASE_COLOR, parentPath, M, matBuff, Mat);
+        getTexture(aiTextureType_NORMALS, parentPath, M, matBuff, Mat);
+        getTexture(aiTextureType_DIFFUSE_ROUGHNESS, parentPath, M, matBuff, Mat);
+        
+        m.Materials.push_back(matBuff);
+        Materials.push_back(Mat);
+    }
+}
+
+void scene::clean_meshes()
+{
+    Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](mesh& m){return m.discard;}), Meshes.end());
+}
+
+void scene::set_max_instances()
+{
+    for(const auto& M : Meshes)
+    {
+        m.max_instances = std::max(m.max_instances, M.nInstances);
+    }
+}
 
 scene* scene::import_scene(const path& pFile) 
 {
     Assimp::Importer importer;
 
-    const aiScene* S = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Fast);
+    const aiScene* S = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Fast | aiProcess_GenBoundingBoxes);
 
     if (!S) {
         std::cerr << "Error importing file '" << pFile << "':\n" << importer.GetErrorString();
@@ -100,84 +267,21 @@ scene* scene::import_scene(const path& pFile)
 
     scene *Scene = new scene;
 
-    unsigned int nLights = S->mNumLights;
-    unsigned int nMats = S->mNumMaterials;
+    Scene->load_lights(S);
 
-    Scene->m.init_constants.push_back(nLights);
+    Scene->load_materials(S, pFile);
 
-    Scene->Lights.resize(nLights);
-
-    for(int n = 0; n < nLights; n++)
-    {
-        const aiLight *iLight = S->mLights[n];
-        aiMatrix4x4 Transform = getTransform(iLight->mName, S);
-        Scene->Lights[n].position = cast3D(Transform * iLight->mPosition);
-        Scene->Lights[n].attenuation.x = iLight->mAttenuationConstant;
-        Scene->Lights[n].attenuation.y = iLight->mAttenuationLinear;
-        Scene->Lights[n].attenuation.z = iLight->mAttenuationQuadratic;
-        Scene->Lights[n].color = cast4D(iLight->mColorDiffuse);
-        Scene->Lights[n].direction = glm::normalize(cast3D(aiMatrix3x3(Transform) * iLight->mDirection));
-        Scene->Lights[n].inner_cone = iLight->mAngleInnerCone;
-        Scene->Lights[n].outer_cone = iLight->mAngleOuterCone;
-        Scene->Lights[n].type = (unsigned int)iLight->mType;
-    }
-
-    for(int n = 0; n < nMats; n++)
-    {
-        aiMaterial *M = S->mMaterials[n];
-        material_buffer matBuff;
-        
-
-        matBuff.Albedo = M->GetTextureCount(aiTextureType_BASE_COLOR) == 0 ? -1 : 0;
-        matBuff.Normal = M->GetTextureCount(aiTextureType_NORMALS) == 0 ? -1 : 0;
-        matBuff.Roughness_metallic = M->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) == 0 ? -1 : 0;
-
-        Material Mat;
-
-        if (0 == matBuff.Albedo){
-            aiString AlbedoPath;
-            M->GetTexture(aiTextureType_BASE_COLOR, 0, &AlbedoPath);
-            matBuff.Albedo = Mat.loadAlbedo(pFile.parent_path() / AlbedoPath.C_Str()).get_slot();
-        }
-        if (0 == matBuff.Normal){
-            aiString NormalPath;
-            M->GetTexture(aiTextureType_NORMALS, 0, &NormalPath);
-            matBuff.Normal = Mat.loadNormal(pFile.parent_path() / NormalPath.C_Str()).get_slot();
-        }
-        if (0 == matBuff.Roughness_metallic){
-            aiString RoughnessPath;
-            M->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &RoughnessPath);
-            matBuff.Roughness_metallic = Mat.loadRoughness(pFile.parent_path() / RoughnessPath.C_Str()).get_slot();
-        }
-
-        Scene->m.Materials.push_back(matBuff);
-        Scene->Materials.push_back(Mat);
-    }
-
-    if(S->HasCameras())
-    {
-        aiMatrix4x4 Transform = getTransform(S->mCameras[0]->mName, S);
-        Scene->m.defaultCamPos = cast3D(Transform * S->mCameras[0]->mPosition);
-    }
+    Scene->load_camera(S);
 
     Scene->process_node(S->mRootNode, S);
 
-    for(auto it = Scene->Meshes.begin(); it < Scene->Meshes.end(); it++)
-    {
-        auto res = it;
+    Scene->find_instances();
 
-        while(res != Scene->Meshes.end())
-        {
-            res = std::find_if(it+1, Scene->Meshes.end(), [it](mesh& M){return it->materialIndex == M.materialIndex && !M.discard;});
-            if (res == Scene->Meshes.end())
-                break;
+    Scene->find_batchable();
 
-            *it = scene::combine_meshes(*it, *res);
-            res->discard = true;
-        }
-    }
+    Scene->clean_meshes();
 
-    Scene->Meshes.erase(std::remove_if(Scene->Meshes.begin(), Scene->Meshes.end(), [](mesh& m){return m.discard;}));
+    Scene->set_max_instances();
 
     return Scene;
 }
@@ -189,6 +293,7 @@ void scene::load_DeferredShader(const path& vertex, const path& fragment)
 
     m.vShader.loadBinary(vertex);
     m.fShader.loadBinary(fragment);
+
     for(int i = 0; i < m.init_constants.size(); i++)
     {
         m.fShader.add_specialization_const(m.init_constants[i], i);
@@ -229,8 +334,10 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 
     for(auto& M : Meshes)
     {
+        //if (M.nVisibleInstances == 0)
+        //    continue;
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
-        Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.transform[0][0]);
+        Transform_Buffer.bufferSubData(sizeof(glm::mat4)*M.nInstances, transform_offset, M.transforms.data());
         M.render();
     }
     m.PostProcRenderer.m.FB.bind();
@@ -250,6 +357,7 @@ void scene::initMeshes()
 
 void scene::initDRenderer(int w, int h)
 {
+    m.DRenderer.m.vShader.add_specialization_const(m.max_instances, 0);    
     m.DRenderer.init(m.scene_vShader, m.scene_fShader, Materials.size(), w, h);
     m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w/2,h/2);
 }

@@ -4,12 +4,20 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "AABB.hpp"
+#include "frustum.hpp"
+
+class scene;
+
+//fuck this I'm fucking tired fuck off
+class MyGame;
 
 class camera
 {
     public:
-  
+
+    friend class scene;
+    friend class MyGame;
+
     struct movement
     {
         uint8_t forward  = 0;
@@ -35,6 +43,11 @@ class camera
         return m.pos;
     }
 
+    const glm::vec3& getPos() const
+    {
+        return m.pos;
+    }
+
     glm::vec3& getFront(){
         return m.front;
     }
@@ -44,7 +57,8 @@ class camera
     {
         return m.view;
     }
-    void makeProj(float aspect);
+    void makeProj();
+
     glm::mat4 getProj()
     {
         return m.proj;
@@ -55,12 +69,38 @@ class camera
         return m.vel;
     }
 
+    float getNear() const
+    {
+        return m.zNear;
+    }
+
+    float getFar() const
+    {
+        return m.zFar;
+    }
+
+    float getFOV() const 
+    {
+        return m.FOVy;
+    }
+
+    void setFOV(float fov)
+    {
+        m.FOVy = fov;
+        makeProj();
+    }
+
     void setPos(const glm::vec3& pos)
     {
         m.pos = pos;
-        glm::vec3 bcenter = glm::vec3(pos.x, pos.y-0.85f, pos.z);
-        glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
-        this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+        //glm::vec3 bcenter = glm::vec3(pos.x, pos.y-0.85f, pos.z);
+        //glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
+        //this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+    }
+
+    void setAspect(float aspect)
+    {
+        m.aspect = aspect;
     }
 
     private:
@@ -73,6 +113,7 @@ class camera
         glm::vec3 pos = glm::vec3(0.0, 0.0, -4.0);
         glm::vec3 vel = glm::vec3(0.0);
         
+        float aspect = 16.0/9.0;
         float FOVy = glm::radians(70.0f);
         float zNear = 0.1f;
         float zFar = 1000.0f;
@@ -81,8 +122,7 @@ class camera
         glm::mat4 proj = glm::mat4(1);
         
         bool update = false;
-
-        AABB bounding_box;
+        frustum view_frustum;
 
     } m;
 

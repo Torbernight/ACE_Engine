@@ -15,7 +15,7 @@ layout(location=1) out vec3 oNormal;
 layout(location=2) out vec3 oPosition;
 layout(location=3) out vec2 oRoughness_Metallic;
 
-#include "uniform_blocks.glsl"
+#include "materials.glsl"
 
 layout(binding=0) uniform sampler2D TextureArray[nMaterials*4];
 

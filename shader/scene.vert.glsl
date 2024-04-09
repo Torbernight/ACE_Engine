@@ -14,14 +14,15 @@ layout(location=2) out vec3 oNormal;
 layout(location=3) out vec3 oTangent;
 layout(location=4) out vec3 oBitangent;
 
-#include "uniform_blocks.glsl"
+#include "transform.glsl"
 
 void main()
 {
+    mat4 Model = uModel[gl_InstanceID];
     vec4 pos = Model * vec4(iPos, 1.0);
     mat3 normalTrans = transpose(inverse(mat3(Model)));
     oPos = pos.xyz;
-    gl_Position = Projection * View * pos;
+    gl_Position = uProjection * uView * pos;
     oNormal    = normalize( normalTrans * iNormal );
     oTangent   = normalize( normalTrans * iTangent);
     oBitangent = normalize( normalTrans * iBitangent);

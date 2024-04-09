@@ -46,8 +46,8 @@ void framebuffer::resize(unsigned int w, unsigned int h)
                 T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
                 T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
                 T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 T.unbind();
         }
         if (m.depth_attachment){
@@ -195,8 +195,8 @@ texture& framebuffer::gen_color_attachment(const texture::texture_parameters& tp
         T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         T.unbind();
         m.color_attachments.push_back(T);
         return m.color_attachments.back();

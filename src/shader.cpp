@@ -27,6 +27,13 @@ void Shader::loadBinary(const std::filesystem::path& P)
         glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
 }
 
+void Shader::loadEmbedded(const uint32_t* data, size_t len)
+{
+        m.bin = std::wstring((wchar_t)data, len);
+        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
+}
+
+
 
 void Shader::loadBinary()
 {
@@ -46,6 +53,12 @@ Shader::Shader(ShaderStage Stage)
 {
         m.stage = Stage;
         m.ShaderID = glCreateShader(Stage);
+}
+
+Shader::Shader(ShaderStage stage, const uint32_t* bin, size_t size)
+{
+        m.stage = stage;
+        loadEmbedded(bin, size);
 }
 
 Shader::Shader(Shader& S)

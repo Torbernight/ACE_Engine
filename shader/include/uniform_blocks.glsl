@@ -1,29 +1,26 @@
 
-layout(std140, binding=0) uniform Transforms
-{
-    mat4 Projection;
-    mat4 View;
-    mat4 Model;
-};
+#extension GL_ARB_gpu_shader_int64 : enable
 
 layout(std140, binding=1) uniform Camera
 {
     vec4 u_CamPos;
     vec4 u_CamFront;
-};
-
-layout(std140, binding = 3) uniform Materials
-{
-    int albedo_index;
-    int normal_index;
-    int roughness_metallic_index;
+    float u_CamNear;
+    float u_CamFar;
 };
 
 layout(binding=4, std140) uniform postProcess
 {
-        float uBrightness;
-        float uContrast;
-        float uSaturation;
-        float uGamma;
-        float uExposure;
+    float uBrightness;
+    float uContrast;
+    float uSaturation;
+    float uGamma;
+    float uExposure;
+};
+
+layout(binding=5, std140) uniform GameState
+{
+    uint64_t uFrame;
+    float uTime;
+    float uDelta;
 };

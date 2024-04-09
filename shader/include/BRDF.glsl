@@ -1,6 +1,7 @@
-#define M_2_PI 1.5707963267948965580
-#define M_PI  3.1415926535897931160
-#define M_PI2 6.2831853071795862320
+#define M_PI   3.1415926535897931160 /* PI   */
+#define M_2_PI 1.5707963267948965580 /* PI/2 */
+#define M_PI2  6.2831853071795862320 /* 2*PI */
+#define M_1_PI 0.3183098861837906912 /* 1/PI */
 
 vec3 fresnel(float cosTheta, vec3 F0)
 {
@@ -10,16 +11,15 @@ vec3 fresnel(float cosTheta, vec3 F0)
 float GGX(float cosNH, float alpha)
 {
     float alpha2 = alpha*alpha;
-    float cos2 = cosNH;
-    float denom = cos2 * (alpha2 - 1) + 1;
-    return alpha2 / (M_PI * denom * denom);
+    float denom = cosNH * cosNH * (alpha2 - 1) + 1;
+    return alpha2 * M_1_PI / (denom * denom);
 }
 
 float GeometrySchlickGGX(float cosNV, float roughness)
 {
-    float r = roughness + 1.0;
-    float k = r*r / 8.0;
-    return cosNV / (cosNV * (1.0 - k) + k);
+    float r = roughness + 1;
+    float k = r * r / 8;
+    return cosNV / (cosNV * (1 - k) + k);
 }
 float GeometrySmith(float cosNV, float cosNL, float roughness)
 {
@@ -37,8 +37,8 @@ vec3 BRDF(vec3 H, vec3 V, vec3 N, vec3 L, float roughness, float metallic, vec3 
         vec3 F = fresnel(cosHV, F0);
         float D = GGX(cosNH, alpha);
         float G = GeometrySmith(cosNV, cosNL, roughness); 
-        vec3 specular = D*G*F / (4.0 * cosNV * cosNL  + 0.0001);  
+        vec3 specular = D*G*F / (4 * cosNV * cosNL  + 0.0001);  
         vec3 kS = F;
-        vec3 kD = (1.0 - kS) * (1.0 - metallic);
-        return (kD * albedo / M_PI + specular) * radiance * cosNL;
+        vec3 kD = (1 - kS) * (1 - metallic);
+        return (kD * albedo * M_1_PI + specular) * radiance * cosNL;
 }

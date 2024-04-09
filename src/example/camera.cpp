@@ -8,12 +8,11 @@ glm::vec3 move2D(const glm::vec3& v)
     return glm::normalize(glm::vec3(v.x, 0.0f, v.z));
 }
 
-void camera::makeProj(float aspect)
+void camera::makeProj()
 {
-    m.proj = glm::perspective(m.FOVy, aspect, m.zNear, m.zFar);
-
+    m.proj = glm::perspective(m.FOVy, m.aspect, m.zNear, m.zFar);
+    m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
-
 
 void camera::move(float dt)
 {
@@ -31,15 +30,17 @@ void camera::move(float dt)
 
     m.pos += m.vel*dt;
 
-    glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.85f, m.pos.z);
-    glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
-    this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+    //glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.85f, m.pos.z);
+    //glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
+    //this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
 
 }
 
 void camera::makeView()
 {
     m.view = glm::lookAt(m.pos, m.pos+m.front, world_up);
+    //m.view_frustum.from_projmat(m.proj * m.view);
+    m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
 void camera::rotate(const glm::vec2& r, float dt)
@@ -47,7 +48,6 @@ void camera::rotate(const glm::vec2& r, float dt)
     m.rotation += r*dt;
 
     m.rotation.x = fmodf(m.rotation.x, 2*M_PIf);
-    //if (m.rotation.x < 0) m.rotation.x += 2*M_PIf;
     m.rotation.y = glm::clamp(m.rotation.y, -M_PI_2f*0.98f, M_PI_2f*0.98f);
 
     glm::vec2 c(glm::cos(m.rotation)), s(glm::sin(m.rotation));

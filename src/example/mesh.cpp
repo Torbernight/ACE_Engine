@@ -18,15 +18,23 @@ void mesh::init()
 void mesh::apply_transform()
 {
     using namespace glm;
-    glm::mat3 ntransform = glm::transpose(glm::inverse(glm::mat3(this->transform)));
+    bounding_box = bounding_box * transforms[0];
+    mat3 ntransform = transpose(inverse(mat3(this->transforms[0])));
     for(auto &V : vertices)
     {
-        V.position = vec3(transform * vec4(V.position, 1.0));
+        V.position = vec3(transforms[0] * vec4(V.position, 1.0));
         V.normal = ntransform * V.normal;
         V.tangent = ntransform * V.tangent;
         V.bitangent = ntransform * V.bitangent;
     }
-    transform = glm::mat4(1.0f);
+    if (nInstances > 1) {
+        mat4 Inv = inverse(this->transforms[0]);
+        for (auto& T : transforms) {
+            T = Inv * T;            
+        }
+    } else {
+        transforms[0] = mat4(1.0f);
+    }
 }
 
 void mesh::join_identical_vertices()
@@ -56,5 +64,5 @@ void mesh::render()
 {
     VAO.bind();
     EBO.bind();
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
+    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr, nInstances);
 }

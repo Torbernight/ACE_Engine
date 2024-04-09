@@ -11,6 +11,7 @@
 #include "../buffer.hpp"
 #include "../shader.hpp"
 
+#include "camera.hpp"
 #include "mesh.hpp"
 #include "material.hpp"
 #include "light.hpp"
@@ -90,7 +91,17 @@ class scene
 
     const glm::vec3& get_defaultCamPos() const
     {
-        return m.defaultCamPos;
+        return m.defaultCamera.m.pos;
+    }
+
+    const camera& get_defaultCamera() const
+    {
+        return m.defaultCamera;
+    }
+
+    unsigned int getMaxInstances() const
+    {
+        return m.max_instances;
     }
 
     private:
@@ -108,7 +119,7 @@ class scene
         Shader fShader;
         shaderProgram sProgram;
 
-        glm::vec3 defaultCamPos = glm::vec3(0.0f/0.0f);
+        camera defaultCamera;
 
         path scene_vShader = "";
         path scene_fShader = "";
@@ -117,6 +128,7 @@ class scene
         path postProcess_vShader = "";
         path postProcess_fShader = "";
 
+        unsigned int max_instances = 0;
 
         members(): 
         UBO(GL_UNIFORM_BUFFER), 
@@ -127,8 +139,17 @@ class scene
         {}
     }m;
 
+    static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat);
+    void set_max_instances();
+    void clean_meshes();
+    void load_materials(const aiScene* Scene, const path& pFile);
+    void load_camera(const aiScene* Scene);
+    void load_lights(const aiScene* Scene);
+    void find_instances();
+    void find_batchable();
     static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);
-    static mesh combine_meshes(mesh& A, mesh& B);
+    static void combine_meshes(mesh& A, mesh& B);
+    static void combine_as_instance(mesh& A, mesh& Instance);
     void process_node(const aiNode* Node, const aiScene* Scene);
     void process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform);
 };

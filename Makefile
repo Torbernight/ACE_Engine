@@ -18,6 +18,7 @@ SHADER_INCLUDE = -Ishader/include
 
 SHADER := $(wildcard shader/*.glsl)
 SHADER_BIN = ${SHADER:.glsl=.spv}
+#SHADER_BIN = ${SHADER:.glsl=.h}
 
 COBJ = $(CSOURCE:.c=.o)
 CXXOBJ = $(CXXSOURCE:.cpp=.o)
@@ -52,6 +53,8 @@ shader: $(SHADER_BIN)
 
 %.spv: %.glsl
 		$(GLS) $(GLSFLAGS) $(SHADER_INCLUDE) $< -o $@
+#%.h: %.glsl
+#		$(GLS) $(GLSFLAGS) $(SHADER_INCLUDE) --vn $(subst shader/,,$(subst .,_,$(subst .glsl,, $<))) $< -o $@
 
 shaderclean:
 	rm -f $(SHADER_BIN)

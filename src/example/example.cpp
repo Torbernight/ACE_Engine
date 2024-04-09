@@ -14,6 +14,22 @@
 #include "material.hpp"
 #include "debug.hpp"
 #include "scene.hpp"
+#include "extensions.hpp"
+
+struct state_UBO
+{
+    uint64_t frame;
+    float runtime;
+    float delta;
+};
+
+struct camera_UBO
+{
+    glm::vec4 pos;
+    glm::vec4 front;
+    float zNear;
+    float zFar;
+};
 
 class MyGame : public application 
 {
@@ -21,16 +37,23 @@ class MyGame : public application
 
     MyGame(int win_w, int win_h) : application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
 
-    float dt = 0.0;
     uint64_t frame = 0;
+    float runtime = 0.0;
+    float dt = 0.0;
+
     camera player;
     scene *gameScene = nullptr;
+
     buffer TransformBuffer = buffer(GL_UNIFORM_BUFFER);
-    buffer Camera_Buff = buffer(GL_UNIFORM_BUFFER);
-    Timer frame_timer, app_timer;
+    buffer Camera_Buffer = buffer(GL_UNIFORM_BUFFER);
+    buffer State_Buffer = buffer(GL_UNIFORM_BUFFER);
+
+    Timer frame_timer;
+    
     bool pause_rendering = false;
     bool escape = false;
     bool vsync = false;
+    bool showInfo = false;
 
     ImGuiIO* imgui_IO = nullptr;
 
@@ -38,7 +61,7 @@ class MyGame : public application
     {
         ImGui::CreateContext();
         ImGui_ImplSDL2_InitForOpenGL(this->win.getHandle(), this->win.getContext());
-        ImGui_ImplOpenGL3_Init();
+        ImGui_ImplOpenGL3_Init("#version 460");
         imgui_IO = &ImGui::GetIO();
     }
 
@@ -55,10 +78,8 @@ class MyGame : public application
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
     }
-
     void init()
     {
-        app_timer.Start();
         SDL_SetRelativeMouseMode(SDL_TRUE);
         init_gl_parameters();
         init_imgui();
@@ -81,15 +102,21 @@ class MyGame : public application
         }
         
         player.makeView();
-        player.makeProj(win.getWidth() / (float)win.getHeight());
+        player.setAspect(win.getWidth() / (float)win.getHeight());
+        player.makeProj();
         TransformBuffer.generate();
-        TransformBuffer.bufferData(3*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
+        TransformBuffer.bufferData((2+gameScene->getMaxInstances())*sizeof(glm::mat4), nullptr, GL_DYNAMIC_DRAW);
         TransformBuffer.bindBufferBase(0);
         TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
         TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
-        Camera_Buff.generate();
-        Camera_Buff.bufferData(32UL, nullptr, GL_DYNAMIC_DRAW);
-        Camera_Buff.bindBufferBase(1);
+        Camera_Buffer.generate();
+        Camera_Buffer.bufferData(sizeof(camera_UBO), nullptr, GL_DYNAMIC_DRAW);
+        Camera_Buffer.bindBufferBase(1);
+        state_UBO buff = {};
+        State_Buffer.generate();
+        State_Buffer.bufferData(sizeof(state_UBO), &buff, GL_DYNAMIC_DRAW);
+        State_Buffer.bindBufferBase(5);
+
     }
 
     void processKeyEvents(const SDL_KeyboardEvent &E)
@@ -149,7 +176,8 @@ class MyGame : public application
         gameScene->resizeViewport(w,h);
         glViewport(0,0,w,h);
         float aspect = w / (float)h;
-        player.makeProj(aspect);
+        player.setAspect(aspect);
+        player.makeProj();
         TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
     }
 
@@ -179,10 +207,7 @@ class MyGame : public application
     {
         ImGui::Begin("Config", &escape);
 
-        ImGui::Text("Frame: %lu", frame);
-        ImGui::Text("Runtime: %f", app_timer.Count());
-        ImGui::Text("deltaTime: %f", dt);
-        ImGui::Text("fps: %.2f", 1.0/dt);
+        ImGui::Checkbox("Show Info", &showInfo);
 
         if (ImGui::Checkbox("VSync", &vsync))
             setVSync();
@@ -194,12 +219,40 @@ class MyGame : public application
         postProc_Update |= ImGui::DragFloat("Contrast", &gameScene->postprocess.Contrast, 0.025, 0.0, 2.0);
         postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
         postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
-        postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, FLT_MIN, FLT_MAX);
+        postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, FLT_MIN, 1.0e+5);
+
+        uint8_t camera_update = 0;
+        ImGui::SeparatorText("Camera options");
+        camera_update |= ImGui::DragFloat("near plane", &player.m.zNear);
+        camera_update |= ImGui::DragFloat("far plane", &player.m.zFar);
+        camera_update |= ImGui::DragFloat("FOV", &player.m.FOVy, 0.01f, M_PIf/16.0f, M_PIf/2.0f);
+
+        ImGui::SeparatorText("Scene Info");
+
+        for (const auto &M : gameScene->Meshes) {
+            if (M.discard)
+                continue;
+            ImGui::Text("Mesh name: %s", M.Name.c_str());
+            ImGui::Text("instances: %u", M.nInstances);
+            ImGui::Separator();
+        }
 
         if (postProc_Update)
             gameScene->updatePostProcessBuffer();
+        if (camera_update){
+            player.makeProj();
+            TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
+            
+        }
 
         ImGui::End();
+    }
+
+    void process_Mousewheel(const SDL_MouseWheelEvent& E)
+    {
+        float FOV = glm::radians(glm::degrees(player.getFOV())+E.y);
+        player.setFOV(glm::clamp(FOV,0.0f, M_PIf));
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
     }
 
     void process_events() override
@@ -228,6 +281,13 @@ class MyGame : public application
                     ImGui_ImplSDL2_ProcessEvent(&E);
                     break;
                 }
+                break;
+                case SDL_MOUSEWHEEL:
+                if (imgui_IO->WantCaptureMouse){
+                    ImGui_ImplSDL2_ProcessEvent(&E);
+                    break;
+                }
+                //process_Mousewheel(E.wheel);
                 break;
                 case SDL_KEYDOWN:
                 case SDL_KEYUP:
@@ -262,9 +322,22 @@ class MyGame : public application
 
     void update_UBOs()
     {
-        glm::vec3 playerdata[2] = {player.getPos(), player.getFront()}; 
-        Camera_Buff.bufferSubData(32, 0, playerdata);
+        camera_UBO camBuff = {glm::vec4(player.getPos(), 0), glm::vec4(player.getFront(), 0), player.getNear(), player.getFar()};
+        state_UBO stateBuff = {frame, runtime, dt};
+
         TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
+        Camera_Buffer.bufferSubData(sizeof(camBuff), 0, &camBuff);
+        State_Buffer.bufferSubData(sizeof(stateBuff), 0, &stateBuff);
+    }
+
+    void show_info()
+    {
+        ImGui::Begin("Info");
+        ImGui::Text("Frame: %lu", frame);   
+        ImGui::Text("Runtime: %f", runtime);
+        ImGui::Text("deltaTime: %f", dt);
+        ImGui::Text("fps: %.2f", 1.0/dt);
+        ImGui::End();
     }
 
     void mainLoop() override
@@ -272,7 +345,6 @@ class MyGame : public application
         while(!win.shouldClose())
         {
             frame_timer.Start();
-
             imgui_frame_start();
 
             process_events();
@@ -283,6 +355,13 @@ class MyGame : public application
             } else {
                 player.move(dt);
                 player.makeView();
+                //for (auto& M : gameScene->Meshes) {
+                //    M.onFrustum(player.m.view_frustum);
+                //}
+            }
+
+            if(showInfo) {
+                show_info();
             }
 
             if (pause_rendering) {
@@ -299,8 +378,10 @@ class MyGame : public application
             imgui_frame_end();
 
             win.swapBuffer();
+            
             frame++;
             dt = frame_timer.Count();
+            runtime += dt;
         }
     }
 

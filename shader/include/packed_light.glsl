@@ -1,4 +1,6 @@
 
+layout(constant_id = 0) const uint nLights = 1;
+
 #define LIGHT_DIRECTIONAL   0x1
 #define LIGHT_POINT         0x2
 #define LIGHT_SPOT          0x3

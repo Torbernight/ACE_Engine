@@ -50,3 +50,9 @@ void process_vertices(const aiMesh* Mesh, std::vector<mesh::vertex> *vertices)
         vertices->push_back(V);
     }
 }
+
+inline static
+float h_fov_to_v_fov(float hfov, float aspect)
+{
+    return 2 * atanf(tanf(hfov*0.5f)*aspect);
+}

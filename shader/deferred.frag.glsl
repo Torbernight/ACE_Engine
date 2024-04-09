@@ -2,8 +2,6 @@
 
 #extension GL_GOOGLE_include_directive : enable
 
-layout(constant_id = 0) const uint nLights = 1;
-
 layout(location=0) in vec2 iTexCoords;
 layout(location=0) out vec4 oColor;
 
@@ -19,10 +17,7 @@ layout(binding=4) uniform sampler2D uDepth;
 
 float LinearizeDepth(float depth) 
 {
-    const float near = 0.1;
-    const float far = 1000.0;
-    float z = depth * 2.0 - 1.0; // back to NDC 
-    return (2.0 * near * far) / (far + near - z * (far - near));	
+    return (2.0 * u_CamNear * u_CamFar) / (u_CamFar + u_CamNear - (depth * 2.0 - 1.0) * (u_CamFar - u_CamNear));	
 }
 
 vec3 compute_pointLight(in lightSource L, in vec3 normal, in vec3 pos, in vec3 albedo)

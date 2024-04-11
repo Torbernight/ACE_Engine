@@ -13,7 +13,8 @@ layout(binding=0) uniform sampler2D uAlbedo;
 layout(binding=1) uniform sampler2D uNormal;
 layout(binding=2) uniform sampler2D uPosition;
 layout(binding=3) uniform sampler2D uRoughness_Metallic;
-layout(binding=4) uniform sampler2D uDepth;
+layout(binding=4) uniform sampler2D uEmissive;
+layout(binding=5) uniform sampler2D uDepth;
 
 float LinearizeDepth(float depth) 
 {
@@ -53,11 +54,12 @@ void main()
     vec3 albedo = texture(uAlbedo, iTexCoords).rgb;
     vec3 normal = texture(uNormal, iTexCoords).rgb;
     vec3 position = texture(uPosition, iTexCoords).rgb;
+    vec3 emissive = texture(uEmissive, iTexCoords).rgb;
     vec2 RM = texture(uRoughness_Metallic, iTexCoords).rg;
     float roughness = RM.x;
     float metallic = 1.0 - RM.y;
 
-    vec3 color = vec3(0.0);
+    vec3 color = vec3(0);
     for(int i = 0; i < nLights; i++)
     {
         lightSource L = from_packed(uLightSources[i]);
@@ -85,8 +87,7 @@ void main()
         vec3 H = normalize(V + normal);
         color += BRDF(H, V, normal, Ldir, roughness, metallic, albedo, radiance);
     }
-    oColor = vec4(color, 1.0);
-    
+    oColor = vec4(emissive.rgb + color, 1.0);
     float cd = 0.025*LinearizeDepth(texture(uDepth, iTexCoords).r);
     float fog = exp2(-cd*cd);
     oColor.rgb = mix(vec3(0), oColor.rgb, fog);

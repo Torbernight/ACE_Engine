@@ -36,6 +36,7 @@ struct material_buffer
     int Albedo;
     int Normal;
     int Roughness_metallic;
+    int Emissive;
 };
 
 class scene

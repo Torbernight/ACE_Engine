@@ -32,7 +32,7 @@ struct AABB
 
         glm::vec3 get_extent() const
         {
-                return max-min;
+                return (max-min)*0.5f;
         }
 
         bool test_point(const glm::vec3& v)
@@ -54,17 +54,23 @@ struct AABB
                 max.z >= B.min.z;
         }
 
-        AABB& operator*(const glm::mat4& M) 
+        AABB operator*(const glm::mat4& M) const
         {
-                min = glm::vec3( M * glm::vec4(min, 1.0f) );
-                max = glm::vec3( M * glm::vec4(max, 1.0f) );
-                return *this;
-        }
+                using namespace glm;
+                vec3 c = get_center() + vec3(M[3]);
+                vec3 e = get_extent();
 
-        AABB& operator*(const glm::mat3& M) 
-        {
-                min = M * min;
-                max = M * max;
-                return *this;
+                vec3 right   = vec3(M[0]) * e.x;
+                vec3 up      = vec3(M[1]) * e.y;
+                vec3 forward = vec3(M[2]) * e.z;
+                mat3 T(M);
+
+                e = vec3(
+                abs(right.x) + abs(up.x) + abs(forward.x),
+                abs(right.y) + abs(up.y) + abs(forward.y),
+                abs(right.z) + abs(up.z) + abs(forward.z)
+                );
+
+                return AABB(c-e, c+e);
         }
 };

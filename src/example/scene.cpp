@@ -1,6 +1,7 @@
 #include <GL/glew.h>
 #include <thread>
 #include <algorithm>
+#include <execution>
 #include "scene.hpp"
 #include "scene_helper.hpp"
 
@@ -189,6 +190,12 @@ int get_roughness(const path& P, Material& Mat)
     return Mat.loadRoughness(P).get_slot();
 }
 
+inline static
+int get_emissive(const path& P, Material& Mat)
+{
+    return Mat.loadEmissive(P).get_slot();
+}
+
 void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat)
 {
     int* texture = nullptr;
@@ -208,6 +215,9 @@ void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMater
             texture = &matBuff.Roughness_metallic;
             load_fun = get_roughness;
             break;
+        case aiTextureType_EMISSIVE:
+            texture = &matBuff.Emissive;
+            load_fun = get_emissive;
         default:
             return;
     }
@@ -235,6 +245,7 @@ void scene::load_materials(const aiScene* S, const path& pFile)
         getTexture(aiTextureType_BASE_COLOR, parentPath, M, matBuff, Mat);
         getTexture(aiTextureType_NORMALS, parentPath, M, matBuff, Mat);
         getTexture(aiTextureType_DIFFUSE_ROUGHNESS, parentPath, M, matBuff, Mat);
+        getTexture(aiTextureType_EMISSIVE, parentPath, M, matBuff, Mat);
         
         m.Materials.push_back(matBuff);
         Materials.push_back(Mat);
@@ -258,7 +269,7 @@ scene* scene::import_scene(const path& pFile)
 {
     Assimp::Importer importer;
 
-    const aiScene* S = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Fast | aiProcess_GenBoundingBoxes);
+    const aiScene* S = importer.ReadFile(pFile, aiProcessPreset_TargetRealtime_Quality | aiProcess_GenBoundingBoxes);
 
     if (!S) {
         std::cerr << "Error importing file '" << pFile << "':\n" << importer.GetErrorString();
@@ -327,6 +338,7 @@ void scene::setUBO()
 
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m.DRenderer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)
@@ -334,8 +346,8 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 
     for(auto& M : Meshes)
     {
-        //if (M.nVisibleInstances == 0)
-        //    continue;
+        if (!M.nVisibleInstances)
+            continue;
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
         Transform_Buffer.bufferSubData(sizeof(glm::mat4)*M.nInstances, transform_offset, M.transforms.data());
         M.render();

@@ -26,7 +26,7 @@ OBJ = $(COBJ) $(CXXOBJ)
 
 DEPENDS = ${OBJ:.o=.d}
 
-LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp
+LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp -ltbb
 
 EXE= cpp_template.out
 

@@ -110,8 +110,9 @@ void deferred_renderer::init(const std::filesystem::path& vShader, const std::fi
         {GL_TEXTURE_2D, 0, GL_RGBA, GL_RGBA8, GL_UNSIGNED_BYTE, (unsigned int)w, (unsigned int)h}, //albedo
         {GL_TEXTURE_2D, 1, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //normal
         {GL_TEXTURE_2D, 2, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //pos
-        {GL_TEXTURE_2D, 3, GL_RG,  GL_RG16F, GL_FLOAT,           (unsigned int)w, (unsigned int)h}, //roughness_metallic
-        {GL_TEXTURE_2D, 4, GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, (unsigned int)w, (unsigned int)h}
+        {GL_TEXTURE_2D, 3, GL_RG,  GL_RG16F, GL_FLOAT,          (unsigned int)w, (unsigned int)h}, //roughness_metallic
+        {GL_TEXTURE_2D, 4, GL_RGB,GL_RGB16F, GL_FLOAT,        (unsigned int)w, (unsigned int)h}, //emissive
+        {GL_TEXTURE_2D, 5, GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, (unsigned int)w, (unsigned int)h}
         });
 
 }

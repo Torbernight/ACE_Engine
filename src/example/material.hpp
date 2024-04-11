@@ -11,13 +11,6 @@ class Material
 {
     public:
 
-    void load(const path& albedo, const path& normal, const path& roughness, const path& metallic)
-    {
-        loadAlbedo(albedo);
-        loadNormal(normal);
-        loadRoughness(roughness);
-    }
-
     texture& loadAlbedo(const path& albedo)
     {
         image_data alb_data = process_image_data(load_image(albedo));
@@ -38,6 +31,14 @@ class Material
         set_texture(m.Roughness, roug_data, last_slot++);
         return m.Roughness;
     }
+
+    texture& loadEmissive(const path& emissive)
+    {
+        image_data em_data = process_image_data(load_image(emissive));
+        set_texture(m.Emissive, em_data, last_slot++);
+        return m.Emissive;
+    }
+
 
     void bind()
     {
@@ -72,6 +73,14 @@ class Material
     const texture& get_roughness() const
     {
         return m.Roughness;
+    }
+    texture& get_emissive()
+    {
+        return m.Emissive;
+    }
+    const texture& get_emissive() const
+    {
+        return m.Emissive;
     }
 
 
@@ -119,6 +128,7 @@ class Material
         texture Albedo;
         texture Normal;
         texture Roughness;
+        texture Emissive;
     } m;
 
     static image_data process_image_data(const image_data& data);

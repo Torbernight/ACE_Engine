@@ -2,6 +2,8 @@
 #include <SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <algorithm>
+#include <execution>
 
 #include "../application.hpp"
 #include "../vertexArray.hpp"
@@ -77,6 +79,8 @@ class MyGame : public application
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     void init()
     {
@@ -329,14 +333,20 @@ class MyGame : public application
         Camera_Buffer.bufferSubData(sizeof(camBuff), 0, &camBuff);
         State_Buffer.bufferSubData(sizeof(stateBuff), 0, &stateBuff);
     }
+#define XYZ(V) V.x, V.y, V.z
+#define XY(V) V.x, V.y
 
     void show_info()
     {
         ImGui::Begin("Info");
         ImGui::Text("Frame: %lu", frame);   
-        ImGui::Text("Runtime: %f", runtime);
-        ImGui::Text("deltaTime: %f", dt);
-        ImGui::Text("fps: %.2f", 1.0/dt);
+        ImGui::Text("Runtime: %fs", runtime);
+        ImGui::Text("%f ms", dt*1e+3);
+        ImGui::Text("%.2f fps", 1.0/dt);
+        ImGui::Text("position: %f %f %f", XYZ(player.m.pos));
+        ImGui::Text("speed: %f %f %f", XYZ(player.m.vel));
+        ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
+        ImGui::Text("front: %f %f %f", XYZ(player.m.front));
         ImGui::End();
     }
 
@@ -355,9 +365,10 @@ class MyGame : public application
             } else {
                 player.move(dt);
                 player.makeView();
-                //for (auto& M : gameScene->Meshes) {
-                //    M.onFrustum(player.m.view_frustum);
-                //}
+                std::for_each(std::execution::par, 
+                gameScene->Meshes.begin(), 
+                gameScene->Meshes.end(), 
+                [this](mesh& M){M.onFrustum(player.m.view_frustum);});
             }
 
             if(showInfo) {
@@ -371,17 +382,13 @@ class MyGame : public application
 
             update_UBOs();
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
             gameScene->render(TransformBuffer, 2*sizeof(glm::mat4));
 
             imgui_frame_end();
-
             win.swapBuffer();
             
             frame++;
-            dt = frame_timer.Count();
-            runtime += dt;
+            runtime += (dt = frame_timer.Count());
         }
     }
 

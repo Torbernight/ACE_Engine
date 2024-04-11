@@ -14,6 +14,7 @@ layout(location=0) out vec4 oAlbedo;
 layout(location=1) out vec3 oNormal;
 layout(location=2) out vec3 oPosition;
 layout(location=3) out vec2 oRoughness_Metallic;
+layout(location=4) out vec3 oEmissive;
 
 #include "materials.glsl"
 
@@ -41,6 +42,12 @@ vec2 get_roughness_metallic()
     return texture(TextureArray[roughness_metallic_index], iTexCoords).gb;
 }
 
+vec3 get_emissive()
+{
+    if (emissive_index < 0)
+        return vec3(0);
+    return texture(TextureArray[emissive_index], iTexCoords).rgb;
+}
 
 void main()
 {
@@ -48,4 +55,5 @@ void main()
     oNormal = normalize(get_normal());
     oRoughness_Metallic = get_roughness_metallic();
     oPosition = iPos;
+    oEmissive = get_emissive();
 }

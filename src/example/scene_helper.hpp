@@ -1,18 +1,22 @@
 #pragma once
 
-inline static vec3 cast3D(const aiVector3D &V)
+inline static
+glm::vec3 cast3D(const aiVector3D &V)
 {
-    return vec3(V.x, V.y, V.z);
+    return glm::vec3(V.x, V.y, V.z);
 }
-inline static vec4 cast4D(const aiColor3D &V)
+inline static
+glm::vec4 cast4D(const aiColor3D &V)
 {
-    return vec4(V.r, V.g, V.b, 1.0f);
+    return glm::vec4(V.r, V.g, V.b, 1.0f);
 }
-inline static vec2 cast2D(const aiVector3D &V)
+inline static
+glm::vec2 cast2D(const aiVector3D &V)
 {
-    return vec2(V.x, V.y);
+    return glm::vec2(V.x, V.y);
 }
-inline static glm::mat4 cast4x4(const aiMatrix4x4 &M)
+inline static
+glm::mat4 cast4x4(const aiMatrix4x4 &M)
 {
     glm::mat4 Result(1);
     for(int i = 0; i < 4; i++) {

@@ -338,7 +338,7 @@ void scene::setUBO()
 
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
     m.DRenderer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)

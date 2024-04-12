@@ -103,6 +103,8 @@ class camera
         m.aspect = aspect;
     }
 
+    void make_AABB();
+
     private:
 
     struct members{
@@ -123,6 +125,8 @@ class camera
         
         bool update = false;
         frustum view_frustum;
+        AABB bounding_box;
+        bool collision = false;
 
     } m;
 

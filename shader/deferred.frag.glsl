@@ -12,7 +12,7 @@ layout(location=0) out vec4 oColor;
 layout(binding=0) uniform sampler2D uAlbedo;
 layout(binding=1) uniform sampler2D uNormal;
 layout(binding=2) uniform sampler2D uPosition;
-layout(binding=3) uniform sampler2D uRoughness_Metallic;
+layout(binding=3) uniform sampler2D uAO_Rough_Metal;
 layout(binding=4) uniform sampler2D uEmissive;
 layout(binding=5) uniform sampler2D uDepth;
 
@@ -55,9 +55,10 @@ void main()
     vec3 normal = texture(uNormal, iTexCoords).rgb;
     vec3 position = texture(uPosition, iTexCoords).rgb;
     vec3 emissive = texture(uEmissive, iTexCoords).rgb;
-    vec2 RM = texture(uRoughness_Metallic, iTexCoords).rg;
-    float roughness = RM.x;
-    float metallic = 1.0 - RM.y;
+    vec3 ARM = texture(uAO_Rough_Metal, iTexCoords).rgb;
+    float AO = ARM.x;
+    float roughness = ARM.y;
+    float metallic = 1.0 - ARM.z;
 
     vec3 color = vec3(0);
     for(int i = 0; i < nLights; i++)
@@ -80,7 +81,7 @@ void main()
                 Ldir = normalize(L.position - position);
                 break;
             case LIGHT_AMBIENT:
-                color += albedo*compute_ambientLight(L);
+                color += AO*compute_ambientLight(L);
                 break;
         }
         vec3 V = normalize(position - u_CamPos.xyz);

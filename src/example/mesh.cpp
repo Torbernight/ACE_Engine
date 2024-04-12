@@ -103,6 +103,8 @@ void mesh::compute_AABB()
     glm::vec3 maxV(-FLT_MAX), minV(FLT_MAX);
     for(unsigned int index : indices)
     {
+        if (UINT32_MAX == index)
+            continue;
         maxV.x = glm::max(vertices[index].position.x, maxV.x);
         maxV.y = glm::max(vertices[index].position.y, maxV.y);
         maxV.z = glm::max(vertices[index].position.z, maxV.z);

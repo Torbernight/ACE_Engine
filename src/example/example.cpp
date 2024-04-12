@@ -335,10 +335,11 @@ class MyGame : public application
     }
 #define XYZ(V) V.x, V.y, V.z
 #define XY(V) V.x, V.y
-
-    void show_info()
+    void info_window()
     {
-        ImGui::Begin("Info");
+        if (!showInfo)
+            return;
+        ImGui::Begin("Info", &showInfo);
         ImGui::Text("Frame: %lu", frame);   
         ImGui::Text("Runtime: %fs", runtime);
         ImGui::Text("%f ms", dt*1e+3);
@@ -346,37 +347,100 @@ class MyGame : public application
         ImGui::Text("position: %f %f %f", XYZ(player.m.pos));
         ImGui::Text("speed: %f %f %f", XYZ(player.m.vel));
         ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
-        ImGui::Text("front: %f %f %f", XYZ(player.m.front));
+        ImGui::Text("collision: %s",player.m.collision ? "true" : "false");
         ImGui::End();
+    }
+#undef XYZ
+#undef XY
+
+    inline static 
+    float maxcomp(const glm::vec3& V){
+        return glm::max(V.x, glm::max(V.y,V.z));
+    }
+
+    void resolve_collision(const AABB& hitbox)
+    {
+        glm::vec3 dir = 
+        glm::abs((player.m.bounding_box.get_center() - hitbox.get_center()) / hitbox.get_extent());
+        dir = glm::clamp(dir, glm::vec3(0), glm::vec3(1)); //if box is planar prevents inf values
+        dir = 2.0f*glm::floor(dir/maxcomp(dir))-1.0f;
+        player.m.vel *= -dir;
+        player.m.pos += player.m.vel * dt;
+        player.make_AABB();
+    }
+
+    void test_collision()
+    {
+        player.m.collision = false;
+        std::mutex mutex;
+        //TODO space partitioning
+        std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
+        [this, &mutex](const mesh& M)
+        {
+            if (!M.collision)
+                return;
+            for(const glm::mat4& transform : M.transforms){
+                AABB hitbox = M.bounding_box * transform;
+                bool collision = 
+                player.m.bounding_box.test_AABB(hitbox); //maybe vulnerable to race condition?
+                if (collision){
+                    mutex.lock();
+                    player.m.collision = true;
+                    resolve_collision(hitbox);
+                    mutex.unlock();
+                }
+            }
+        }
+        );
+    }
+
+    void update_gameLogic()
+    {
+        process_events();
+        if(escape) {
+            show_config();
+            return;
+        }
+        player.move(dt);
+        test_collision();
+        player.makeView();
+        std::for_each(std::execution::par, 
+        gameScene->Meshes.begin(), 
+        gameScene->Meshes.end(), 
+        [this](mesh& M){M.onFrustum(player.m.view_frustum);});
+    }
+
+    inline void startFrame()
+    {
+        frame_timer.Start();
+        imgui_frame_start();
+    }
+
+    inline void endFrame()
+    {
+        imgui_frame_end();
+        win.swapBuffer();
+        frame++;
+        runtime += (dt = frame_timer.Count());
+    }
+
+    inline void end_norender()
+    {
+        runtime += (dt = frame_timer.Count());
     }
 
     void mainLoop() override
     {
         while(!win.shouldClose())
         {
-            frame_timer.Start();
-            imgui_frame_start();
+            startFrame();
 
-            process_events();
+            update_gameLogic();
 
-            if(escape) {
-                show_config();
-
-            } else {
-                player.move(dt);
-                player.makeView();
-                std::for_each(std::execution::par, 
-                gameScene->Meshes.begin(), 
-                gameScene->Meshes.end(), 
-                [this](mesh& M){M.onFrustum(player.m.view_frustum);});
-            }
-
-            if(showInfo) {
-                show_info();
-            }
-
+            info_window();
+            
             if (pause_rendering) {
-                dt = frame_timer.Count();
+                end_norender();
                 continue;
             }
 
@@ -384,11 +448,7 @@ class MyGame : public application
 
             gameScene->render(TransformBuffer, 2*sizeof(glm::mat4));
 
-            imgui_frame_end();
-            win.swapBuffer();
-            
-            frame++;
-            runtime += (dt = frame_timer.Count());
+            endFrame();
         }
     }
 

@@ -30,16 +30,19 @@ void camera::move(float dt)
 
     m.pos += m.vel*dt;
 
-    //glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.85f, m.pos.z);
-    //glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
-    //this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+    make_AABB();
+}
 
+void camera::make_AABB()
+{
+    glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.845f, m.pos.z);
+    glm::vec3 bbounds = glm::vec3(0.25f, 0.845f, 0.25f);
+    this->m.bounding_box = AABB(bcenter-bbounds, bcenter+bbounds);
 }
 
 void camera::makeView()
 {
     m.view = glm::lookAt(m.pos, m.pos+m.front, world_up);
-    //m.view_frustum.from_projmat(m.proj * m.view);
     m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 

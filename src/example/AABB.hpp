@@ -60,15 +60,14 @@ struct AABB
                 vec3 c = get_center() + vec3(M[3]);
                 vec3 e = get_extent();
 
-                vec3 right   = vec3(M[0]) * e.x;
-                vec3 up      = vec3(M[1]) * e.y;
-                vec3 forward = vec3(M[2]) * e.z;
-                mat3 T(M);
+                vec3 right   = abs(vec3(M[0]) * e.x);
+                vec3 up      = abs(vec3(M[1]) * e.y);
+                vec3 forward = abs(vec3(M[2]) * e.z);
 
                 e = vec3(
-                abs(right.x) + abs(up.x) + abs(forward.x),
-                abs(right.y) + abs(up.y) + abs(forward.y),
-                abs(right.z) + abs(up.z) + abs(forward.z)
+                right.x + up.x + forward.x,
+                right.y + up.y + forward.y,
+                right.z + up.z + forward.z
                 );
 
                 return AABB(c-e, c+e);

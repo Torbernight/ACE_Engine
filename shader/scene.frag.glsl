@@ -13,7 +13,7 @@ layout(location=4) in vec3 iBitangent;
 layout(location=0) out vec4 oAlbedo;
 layout(location=1) out vec3 oNormal;
 layout(location=2) out vec3 oPosition;
-layout(location=3) out vec2 oRoughness_Metallic;
+layout(location=3) out vec3 oAO_Roughness_Metallic;
 layout(location=4) out vec3 oEmissive;
 
 #include "materials.glsl"
@@ -35,11 +35,11 @@ vec3 get_normal()
     (texture(TextureArray[normal_index], iTexCoords).xyz*2.0-1.0);
 }
 
-vec2 get_roughness_metallic()
+vec3 get_AO_roughness_metallic()
 {
-    if (roughness_metallic_index < 0)
-        return vec2(0.0);
-    return texture(TextureArray[roughness_metallic_index], iTexCoords).gb;
+    if (AO_roughness_metallic_index < 0)
+        return vec3(1.0, 0.0, 0.0);
+    return texture(TextureArray[AO_roughness_metallic_index], iTexCoords).rgb;
 }
 
 vec3 get_emissive()
@@ -53,7 +53,7 @@ void main()
 {
     oAlbedo = vec4(get_albedo(), 1.0);
     oNormal = normalize(get_normal());
-    oRoughness_Metallic = get_roughness_metallic();
+    oAO_Roughness_Metallic = get_AO_roughness_metallic();
     oPosition = iPos;
     oEmissive = get_emissive();
 }

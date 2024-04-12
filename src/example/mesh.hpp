@@ -51,6 +51,8 @@ class mesh
     unsigned int nVisibleInstances = 1;
     unsigned int materialIndex = 0;
     bool discard = false;
+    
+    bool collision = true;
 
     void apply_transform();
     void join_identical_vertices();

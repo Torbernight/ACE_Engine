@@ -389,32 +389,32 @@
 		{
 			"mimeType":"image/jpeg",
 			"name":"Carpet0012_1_350",
-			"uri":"texture/Carpet0012_1_350.jpg"
+			"uri":"textures/Carpet0012_1_350.jpg"
 		},
 		{
 			"mimeType":"image/png",
 			"name":"853339bc04899b04a6d9920f166bcd57",
-			"uri":"texture/853339bc04899b04a6d9920f166bcd57.png"
+			"uri":"textures/853339bc04899b04a6d9920f166bcd57.png"
 		},
 		{
 			"mimeType":"image/jpeg",
 			"name":"door_texture_3d_model_c4d_max_obj_fbx_ma_lwo_3ds_3dm_stl_963788_o",
-			"uri":"texture/door_texture_3d_model_c4d_max_obj_fbx_ma_lwo_3ds_3dm_stl_963788_o.jpg"
+			"uri":"textures/door_texture_3d_model_c4d_max_obj_fbx_ma_lwo_3ds_3dm_stl_963788_o.jpg"
 		},
 		{
 			"mimeType":"image/jpeg",
 			"name":"dark-damask-seamless-pattern-background-elegant-luxury-texture-wallpapers_1217-1173",
-			"uri":"texture/dark-damask-seamless-pattern-background-elegant-luxury-texture-wallpapers_1217-1173.jpg"
+			"uri":"textures/dark-damask-seamless-pattern-background-elegant-luxury-texture-wallpapers_1217-1173.jpg"
 		},
 		{
 			"mimeType":"image/jpeg",
 			"name":"bbba8df0e0a43b00649ca3e3ec13e318",
-			"uri":"texture/bbba8df0e0a43b00649ca3e3ec13e318.jpg"
+			"uri":"textures/bbba8df0e0a43b00649ca3e3ec13e318.jpg"
 		},
 		{
 			"mimeType":"image/jpeg",
 			"name":"GettyImages-673515188-4e535852ebee4e8ca056a2d7b6aca4f5",
-			"uri":"texture/GettyImages-673515188-4e535852ebee4e8ca056a2d7b6aca4f5.jpg"
+			"uri":"textures/GettyImages-673515188-4e535852ebee4e8ca056a2d7b6aca4f5.jpg"
 		}
 	],
 	"accessors":[

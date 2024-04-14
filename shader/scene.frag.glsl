@@ -46,7 +46,7 @@ vec3 get_emissive()
 {
     if (emissive_index < 0)
         return vec3(0);
-    return texture(TextureArray[emissive_index], iTexCoords).rgb;
+    return 1.0-texture(TextureArray[emissive_index], iTexCoords).rgb;
 }
 
 void main()

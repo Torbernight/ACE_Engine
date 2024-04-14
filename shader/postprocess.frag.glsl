@@ -59,6 +59,17 @@ vec3 reinhard_extended_luminance(in vec3 v, in float max_white_l)
     return change_luminance(v, l_new);
 }
 
+vec3 crosshair(in vec3 color, in vec2 resolution)
+{
+        vec2 TC = abs(iTexCoords*2.0-1.0);
+        if (all(lessThanEqual(TC,vec2(5/resolution))))
+        {
+                color = any(lessThanEqual(TC, 0.5/resolution)) ? vec3(1.0) : color;
+        }
+        return color;
+}
+
+
 void main()
 {
         vec2 resolution = textureSize(uScreen, 0).xy;
@@ -71,6 +82,8 @@ void main()
         color = applyGamma(color, uGamma);
 
         color = blackBars(iTexCoords, color, resolution.x/resolution.y, 4.0/3.0);
+
+        color = crosshair(color, resolution);
 
         oColor = vec4(color, 1.0);
 }

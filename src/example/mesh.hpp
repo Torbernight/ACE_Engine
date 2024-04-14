@@ -51,8 +51,13 @@ class mesh
     unsigned int nVisibleInstances = 1;
     unsigned int materialIndex = 0;
     bool discard = false;
-    
     bool collision = true;
+    bool static_mesh = true;
+    bool grabbable = false;
+    bool selected = false;
+
+    glm::vec3 acc =   glm::vec3(0.0f);
+    glm::vec3 vel = glm::vec3(0.0f);
 
     void apply_transform();
     void join_identical_vertices();

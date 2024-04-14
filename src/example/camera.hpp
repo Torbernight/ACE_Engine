@@ -5,6 +5,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "frustum.hpp"
+#include "mesh.hpp"
 
 class scene;
 
@@ -27,6 +28,8 @@ class camera
         uint8_t up       = 0;
         uint8_t down     = 0;
         uint8_t sprint   = 0;
+        uint8_t lclick   = 0;
+        uint8_t hasClicked = 0;
     } movement;
 
 
@@ -117,7 +120,7 @@ class camera
         glm::vec3 acc = glm::vec3(0.0);
         
         float aspect = 16.0/9.0;
-        float FOVy = glm::radians(70.0f);
+        float FOVy = glm::radians(50.0f);
         float zNear = 0.1f;
         float zFar = 1000.0f;
 
@@ -128,6 +131,7 @@ class camera
         frustum view_frustum;
         AABB bounding_box;
         bool collision = false;
+        mesh* grabbed_object = nullptr;
 
         glm::vec3 previousPos = glm::vec3(0.0);
         glm::vec3 realVel = glm::vec3(0.0);

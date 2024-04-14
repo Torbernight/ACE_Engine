@@ -60,28 +60,98 @@ mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
     return M;
 }
 
+#define XYZ(V) V.x << " " << V.y << " " << V.z
+
+void process_metadata(const aiMetadata *Metadata, int level = 0)
+{
+    for (int n = 0; n < Metadata->mNumProperties; n++){
+        void* data = Metadata->mValues[n].mData;
+        for(int m = 0; m < level+1; m++){
+            std::cout << "\t";
+        }
+        switch(Metadata->mValues[n].mType)
+        {
+            case AI_BOOL:
+                std::cout << "type BOOL: " << Metadata->mKeys[n].C_Str() << ": " << ((*(bool*)data) ? "true" : "false") << "\n";
+                break;
+            case AI_INT32:
+                std::cout << "type INT32: " << Metadata->mKeys[n].C_Str() << ": " << *(int32_t*)data << "\n";
+                break;
+            case AI_UINT64:
+                std::cout << "type UINT64: " << Metadata->mKeys[n].C_Str() << ": " << *(uint64_t*)data << "\n";
+                break;
+            case AI_FLOAT:
+                std::cout << "type FLOAT: " << Metadata->mKeys[n].C_Str() << ": " << *(float*)data << "\n";
+                break;
+            case AI_DOUBLE:
+                std::cout << "type DOUBLE: " << Metadata->mKeys[n].C_Str() << ": " << *(double*)data << "\n";
+                break;
+            case AI_AISTRING:
+                std::cout << "type AISTRING: " << Metadata->mKeys[n].C_Str() << ": " << ((aiString*)data)->C_Str() << "\n";
+                break;
+            case AI_AIVECTOR3D:
+                std::cout << "type AIVECTOR3D: " << Metadata->mKeys[n].C_Str() << ": " << XYZ((*(aiVector3D*)data)) << "\n";
+                break;
+            case AI_AIMETADATA:
+                std::cout << "\ttype AIMETADATA:\n";
+                process_metadata((aiMetadata*)data, level+1);
+                break;
+            case AI_INT64:
+                std::cout << "\ttype INT64: " << Metadata->mKeys[n].C_Str() << ": " << *(int64_t*)data << "\n";
+                break;
+            case AI_UINT32:
+                std::cout << "\ttype UINT32: " << Metadata->mKeys[n].C_Str() << ": " << *(uint32_t*)data << "\n";
+                break;
+            default:
+                std::cout << "\ttype UNKNOWN\n";
+            break;
+        }
+    }
+}
+
 void scene::process_node(const aiNode* Node, const aiScene* Scene)
 {
+    bool grabbable = false;
+    bool mesh_static = true;
+    if (Node->mMetaData){
+        //std::cout << "Node " << Node->mName.C_Str() << " metadata:\n";
+        //process_metadata(Node->mMetaData);
+        Node->mMetaData->Get<bool>("grabbable", grabbable);
+        Node->mMetaData->Get<bool>("static", mesh_static);
+    }
     aiMatrix4x4 Transform = Node->mTransformation;
 
     for (int n = 0; n < Node->mNumMeshes; n++)
     {
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
+        Meshes.back().grabbable = grabbable;
+        Meshes.back().static_mesh = mesh_static;
     }
 
     for (int n = 0; n < Node->mNumChildren; n++)
         process_node(Node->mChildren[n], Scene, Node->mTransformation);
 }
+#undef XYZ
 
 void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform)
 {
+    bool grabbable = false;
+    bool mesh_static = true;
+    if (Node->mMetaData){
+        //std::cout << "Node " << Node->mName.C_Str() << " metadata:\n";
+        //process_metadata(Node->mMetaData);
+        Node->mMetaData->Get<bool>("grabbable", grabbable);
+        Node->mMetaData->Get<bool>("static", mesh_static);
+    }
     aiMatrix4x4 Transform = ParentTransform * Node->mTransformation;
 
     for (int n = 0; n < Node->mNumMeshes; n++)
     {
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
+        Meshes.back().grabbable = grabbable;
+        Meshes.back().static_mesh = mesh_static;
     }
 
     for (int n = 0; n < Node->mNumChildren; n++)
@@ -340,12 +410,11 @@ void scene::setUBO()
 
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     m.DRenderer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)
         M.bind();
-
     for(auto& M : Meshes)
     {
         if (!M.nVisibleInstances)

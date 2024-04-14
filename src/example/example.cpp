@@ -285,6 +285,11 @@ class MyGame : public application
                     ImGui_ImplSDL2_ProcessEvent(&E);
                     break;
                 }
+                if (E.button.button == SDL_BUTTON_LEFT) {
+                    uint8_t click = E.type == SDL_MOUSEBUTTONDOWN;
+                    player.movement.hasClicked = player.movement.lclick != click && click;
+                    player.movement.lclick = click;
+                }
                 break;
                 case SDL_MOUSEWHEEL:
                 if (imgui_IO->WantCaptureMouse){
@@ -377,18 +382,31 @@ class MyGame : public application
         player.make_AABB();
     }
 
-    void test_collision()
+    void resolve_collision(const AABB& box, mesh& M, const AABB& hitbox)
+    {
+        glm::vec3 dir = (box.get_center() - hitbox.get_center()) / hitbox.get_extent();
+        clampnan(dir);
+        dir = glm::trunc(dir/maxcomp(dir));
+        glm::vec3 Pos = glm::vec3(M.transforms[0][3]);
+        glm::vec3 previousPos = Pos - M.vel*dt;
+        M.vel *= (1.0f-glm::abs(dir));
+        Pos = previousPos + M.vel * dt;
+        SDL_assert(!glm::any(glm::isnan(Pos)) && !glm::any(glm::isinf(Pos)));
+        M.transforms[0][3] = glm::vec4(Pos, 1.0f);
+    }
+
+    void test_player_collision()
     {
         if (glm::length(player.m.realVel) == 0){
             return;
         }
-        player.m.collision = false;
         std::mutex mutex;
+        player.m.collision = false;
         //TODO space partitioning
         std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
         [this, &mutex](const mesh& M)
         {
-            if (!M.collision)
+            if (!M.collision || M.grabbable)
                 return;
             for(const glm::mat4& transform : M.transforms){
                 AABB hitbox = M.bounding_box * transform;
@@ -405,6 +423,73 @@ class MyGame : public application
         );
     }
 
+    void test_object_collision()
+    {
+        std::mutex mutex;
+        for (auto &M : gameScene->Meshes)
+        {
+            if (M.static_mesh)
+                continue;
+            AABB box = M.bounding_box * M.transforms[0];
+            std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
+            [this, &mutex, &box, &M](const mesh& Mesh)
+            {
+                if (!Mesh.static_mesh || Mesh.grabbable)
+                    return;
+                for(const glm::mat4& transform : Mesh.transforms){
+                    AABB hitbox = Mesh.bounding_box * transform;
+                    bool collision =  box.test_AABB(hitbox);
+                    if (collision){
+                        mutex.lock();
+                        resolve_collision(box, M, hitbox);
+                        box = M.bounding_box * M.transforms[0];
+                        mutex.unlock();
+                    }
+                }
+            }
+        );
+        }
+    }
+
+    void test_collision()
+    {
+        test_player_collision();
+        test_object_collision();
+    }
+
+    //https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+    // compute the near and far intersections of the cube (stored in the x and y components) using the slab method
+    // no intersection means vec.x > vec.y (really tNear > tFar)
+    glm::vec2 intersectAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const AABB& box) {
+        glm::vec3 tMin = (box.min - rayOrigin) / rayDir;
+        glm::vec3 tMax = (box.max - rayOrigin) / rayDir;
+        glm::vec3 t1 = glm::min(tMin, tMax);
+        glm::vec3 t2 = glm::max(tMin, tMax);
+        float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
+        float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
+        return glm::vec2(tNear, tFar);
+    };
+
+    bool meshIntersects(const mesh& M, unsigned int instance = 0)
+    {
+        glm::vec2 intersection = intersectAABB(player.m.pos, player.m.front, M.bounding_box*M.transforms[instance]);
+        return intersection.x <= intersection.y;
+    }
+
+    mesh* grab_mesh()
+    {
+        float dist = FLT_MAX;
+        auto M = std::find_if(gameScene->Meshes.begin(), gameScene->Meshes.end(), 
+        [this, &dist](const mesh& Mesh)
+        {
+            float d = glm::distance(player.m.pos, (Mesh.bounding_box*Mesh.transforms[0]).get_center());
+            bool closest = d < dist;
+            dist = closest ? d : dist;
+            return meshIntersects(Mesh) && Mesh.grabbable && closest;
+        });
+        return M == gameScene->Meshes.end() ? nullptr : &(*M);
+    }
+
     void update_gameLogic()
     {
         process_events();
@@ -412,8 +497,37 @@ class MyGame : public application
             show_config();
             return;
         }
+        if (player.movement.hasClicked) {
+            if (!player.m.grabbed_object){
+                player.m.grabbed_object = grab_mesh();
+                if (player.m.grabbed_object) {
+                player.m.grabbed_object->static_mesh = true;
+                }
+            }
+            else {
+                player.m.grabbed_object->static_mesh = false;
+                player.m.grabbed_object = nullptr;
+            }
+        }
+        for (auto &M : gameScene->Meshes) 
+        {
+            if (M.static_mesh)
+                continue;
+
+            M.acc = glm::vec3(0.0f, -9.8f, 0.0f);
+            M.vel += M.acc*dt;
+            M.transforms[0][3] += glm::vec4(M.vel*dt, 0.0f);
+        }
         player.move(dt);
         test_collision();
+        if (player.m.grabbed_object){
+            glm::mat4 &T = player.m.grabbed_object->transforms[0];
+            glm::mat4 trans = glm::mat4(glm::mat3(player.m.right, player.m.up, -player.m.front));
+            glm::vec4 pos = T[3];
+            pos = glm::vec4( player.m.pos + player.m.up*-0.125f + player.m.front*0.6f + player.m.right*0.1f, 1.0f );
+            trans[3] = pos;
+            T = trans;
+        }
         player.makeView();
         std::for_each(std::execution::par, 
         gameScene->Meshes.begin(), 

@@ -16,19 +16,37 @@ void camera::makeProj()
 
 void camera::move(float dt)
 {
-    m.vel = 
+    m.acc = 
     (float)(movement.forward-movement.backward)*move2D(m.front)
     + 
     (float)(movement.right-movement.left)*move2D(m.right)
-    +
+    + 
     (float)(movement.up-movement.down)*world_up;
 
-    if (glm::dot(m.vel,m.vel) == 0)
-        return;
+    if (glm::dot(m.acc,m.acc) == 0){
+        if (m.collision){
+            m.vel *= 0.1f;
+            return;
+        }
+    } else {
+        m.acc = glm::normalize(m.acc) * 1000.0f;
+        m.vel.x = m.acc.x == 0 ? 0.0f : m.vel.x;
+        m.vel.z = m.acc.z == 0 ? 0.0f : m.vel.z;
+        if (!m.collision){
+            m.acc = glm::vec3(0.0f);
+        }
+    }
+    m.vel += m.acc*dt;
+    float speed = glm::length(m.vel);
+    float speedcap = glm::mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
 
-    m.vel = glm::normalize(m.vel) * glm::mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
-
+    if (speed > speedcap){
+        m.vel = glm::normalize(m.vel)*speedcap;
+    }
+    m.vel += glm::vec3(0.0, -9.8f*dt, 0.0);
+    m.previousPos = m.pos;
     m.pos += m.vel*dt;
+    m.realVel = (m.pos - m.previousPos) / dt;
 
     make_AABB();
 }

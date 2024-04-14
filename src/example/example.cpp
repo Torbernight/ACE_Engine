@@ -345,7 +345,7 @@ class MyGame : public application
         ImGui::Text("%f ms", dt*1e+3);
         ImGui::Text("%.2f fps", 1.0/dt);
         ImGui::Text("position: %f %f %f", XYZ(player.m.pos));
-        ImGui::Text("speed: %f %f %f", XYZ(player.m.vel));
+        ImGui::Text("speed: %f %f %f", XYZ(player.m.realVel));
         ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
         ImGui::Text("collision: %s",player.m.collision ? "true" : "false");
         ImGui::End();
@@ -355,22 +355,33 @@ class MyGame : public application
 
     inline static 
     float maxcomp(const glm::vec3& V){
-        return glm::max(V.x, glm::max(V.y,V.z));
+        return glm::max(abs(V.x), glm::max(abs(V.y),abs(V.z)));
+    }
+    inline static
+    void clampnan(glm::vec3 &V){
+        V.x = isnan(V.x) ? 0.0 : isinf(V.x) ? glm::sign(V.x) : V.x;
+        V.y = isnan(V.y) ? 0.0 : isinf(V.y) ? glm::sign(V.y) : V.y;
+        V.z = isnan(V.z) ? 0.0 : isinf(V.z) ? glm::sign(V.z) : V.z;
     }
 
     void resolve_collision(const AABB& hitbox)
     {
-        glm::vec3 dir = 
-        glm::abs((player.m.bounding_box.get_center() - hitbox.get_center()) / hitbox.get_extent());
-        dir = glm::clamp(dir, glm::vec3(0), glm::vec3(1)); //if box is planar prevents inf values
-        dir = 2.0f*glm::floor(dir/maxcomp(dir))-1.0f;
-        player.m.vel *= -dir;
-        player.m.pos += player.m.vel * dt;
+        glm::vec3 dir = (player.m.bounding_box.get_center() - hitbox.get_center()) / hitbox.get_extent();
+        clampnan(dir);
+        dir = glm::trunc(dir/maxcomp(dir));
+        //player.m.vel = glm::reflect(player.m.vel, dir);
+        player.m.vel *= (1.0f-glm::abs(dir));
+        player.m.pos = player.m.previousPos + player.m.vel * dt;
+        SDL_assert(!glm::any(glm::isnan(player.m.pos)));
+        player.m.realVel = (player.m.pos - player.m.previousPos) / dt;
         player.make_AABB();
     }
 
     void test_collision()
     {
+        if (glm::length(player.m.realVel) == 0){
+            return;
+        }
         player.m.collision = false;
         std::mutex mutex;
         //TODO space partitioning

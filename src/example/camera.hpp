@@ -114,6 +114,7 @@ class camera
         glm::vec2 rotation = glm::vec2(0.0);
         glm::vec3 pos = glm::vec3(0.0, 0.0, -4.0);
         glm::vec3 vel = glm::vec3(0.0);
+        glm::vec3 acc = glm::vec3(0.0);
         
         float aspect = 16.0/9.0;
         float FOVy = glm::radians(70.0f);
@@ -128,9 +129,12 @@ class camera
         AABB bounding_box;
         bool collision = false;
 
+        glm::vec3 previousPos = glm::vec3(0.0);
+        glm::vec3 realVel = glm::vec3(0.0);
+
     } m;
 
-    inline static float s_walk_speed = 1.5f;
-    inline static float s_sprint_speed = 3.0f;
+    inline static float s_walk_speed = 3.0f;
+    inline static float s_sprint_speed = 6.0f;
 
 };

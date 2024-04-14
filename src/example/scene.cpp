@@ -63,6 +63,7 @@ mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
 void scene::process_node(const aiNode* Node, const aiScene* Scene)
 {
     aiMatrix4x4 Transform = Node->mTransformation;
+
     for (int n = 0; n < Node->mNumMeshes; n++)
     {
         unsigned int index = Node->mMeshes[n];
@@ -218,6 +219,7 @@ void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMater
         case aiTextureType_EMISSIVE:
             texture = &matBuff.Emissive;
             load_fun = get_emissive;
+            break;
         default:
             return;
     }

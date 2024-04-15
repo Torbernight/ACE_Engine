@@ -37,6 +37,7 @@ struct material_buffer
     int Normal;
     int Roughness_metallic;
     int Emissive;
+    int glow = 0;
 };
 
 class scene

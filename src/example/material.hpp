@@ -48,6 +48,8 @@ class Material
             m.Normal.bind_unit();
         if (m.Roughness) 
             m.Roughness.bind_unit();
+        if (m.Emissive)
+            m.Emissive.bind_unit();
     }
 
     texture& get_albedo()
@@ -131,7 +133,6 @@ class Material
         texture Emissive;
     } m;
 
-    static image_data process_image_data(const image_data& data);
     static void set_texture(texture& T, image_data& D, int slot);
     static int last_slot;
 

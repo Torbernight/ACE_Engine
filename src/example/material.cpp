@@ -7,69 +7,6 @@
 int Material::last_slot = 0;
 
 
-image_data Material::process_image_data(const image_data& data)
-{
-    image_data D = data;
-    switch(D.type)
-    {
-        case FIT_BITMAP:
-            D.type = GL_UNSIGNED_BYTE;
-            switch(D.format)
-            {
-                case 8:
-                D.format = GL_RED;
-                D.internal_format = GL_R8;
-                break;
-
-                case 16:
-                D.format = GL_RG;
-                D.internal_format = GL_RG8;
-                break;
-
-                case 24:
-                D.format = GL_BGR;
-                D.internal_format = GL_RGB8;
-                break;
-
-                case 32:
-                D.format = GL_BGRA;
-                D.internal_format = GL_RGBA8;
-                break;
-            }
-            break;
-        case FIT_RGBF:
-            D.type = GL_FLOAT;
-            D.format = GL_RGB;
-            D.internal_format = GL_RGB32F;
-            break;
-        case FIT_RGBAF:
-            D.type = GL_FLOAT;
-            D.format = GL_RGBA;
-            D.internal_format = GL_RGBA32F;
-            break;
-        case FIT_FLOAT:
-            D.type = GL_FLOAT;
-            D.format = GL_RED;
-            D.internal_format = GL_R32F;
-            break;
-        case FIT_RGBA16:
-            D.type =  GL_UNSIGNED_SHORT;
-            D.format = GL_RGBA;
-            D.internal_format = GL_RGBA16;
-            break;
-        case FIT_RGB16:
-            D.type =  GL_UNSIGNED_SHORT;
-            D.format = GL_RGB;
-            D.internal_format = GL_RGB16UI;
-            break;
-        default:
-            std::cerr << "Warning! unidentified format!" << std::endl;
-            BREAKPOINT();
-
-    }
-    return D;
-}
-
 void Material::set_texture(texture& T, image_data& D, int slot)
 {
     T.setWidth(D.width);

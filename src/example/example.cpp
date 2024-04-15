@@ -88,7 +88,7 @@ class MyGame : public application
         init_gl_parameters();
         init_imgui();
 
-        gameScene = scene::import_scene("assets/test.gltf");
+        gameScene = scene::import_scene("assets/garden.gltf");
         if (!gameScene){
             win.set_shouldClose(true);
             return;
@@ -485,7 +485,7 @@ class MyGame : public application
             float d = glm::distance(player.m.pos, (Mesh.bounding_box*Mesh.transforms[0]).get_center());
             bool closest = d < dist;
             dist = closest ? d : dist;
-            return meshIntersects(Mesh) && Mesh.grabbable && closest;
+            return meshIntersects(Mesh) && Mesh.grabbable && closest && !Mesh.grabbed;
         });
         return M == gameScene->Meshes.end() ? nullptr : &(*M);
     }
@@ -497,15 +497,25 @@ class MyGame : public application
             show_config();
             return;
         }
+        if (player.m.pointed_object){
+            player.m.pointed_object->selected = false;
+        }
+        player.m.pointed_object = grab_mesh();
+        if (player.m.pointed_object){
+            player.m.pointed_object->selected = true;
+        }
         if (player.movement.hasClicked) {
             if (!player.m.grabbed_object){
-                player.m.grabbed_object = grab_mesh();
+                player.m.grabbed_object = player.m.pointed_object; 
                 if (player.m.grabbed_object) {
-                player.m.grabbed_object->static_mesh = true;
+                    player.m.grabbed_object->static_mesh = true;
+                    player.m.grabbed_object->grabbed = true;
+                    player.m.grabbed_object->selected = false;
                 }
             }
             else {
                 player.m.grabbed_object->static_mesh = false;
+                player.m.grabbed_object->grabbed = false;
                 player.m.grabbed_object = nullptr;
             }
         }

@@ -13,3 +13,5 @@ struct image_data
 };
 
 image_data load_image(const std::filesystem::path& P);
+image_data process_image_data(const image_data& data);
+

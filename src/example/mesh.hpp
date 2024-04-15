@@ -55,6 +55,7 @@ class mesh
     bool static_mesh = true;
     bool grabbable = false;
     bool selected = false;
+    bool grabbed = false;
 
     glm::vec3 acc =   glm::vec3(0.0f);
     glm::vec3 vel = glm::vec3(0.0f);

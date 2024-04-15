@@ -132,6 +132,7 @@ class camera
         AABB bounding_box;
         bool collision = false;
         mesh* grabbed_object = nullptr;
+        mesh* pointed_object = nullptr;
 
         glm::vec3 previousPos = glm::vec3(0.0);
         glm::vec3 realVel = glm::vec3(0.0);

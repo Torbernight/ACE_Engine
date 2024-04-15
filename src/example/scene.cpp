@@ -318,7 +318,8 @@ void scene::load_materials(const aiScene* S, const path& pFile)
         getTexture(aiTextureType_NORMALS, parentPath, M, matBuff, Mat);
         getTexture(aiTextureType_DIFFUSE_ROUGHNESS, parentPath, M, matBuff, Mat);
         getTexture(aiTextureType_EMISSIVE, parentPath, M, matBuff, Mat);
-        
+        matBuff.glow = 0;
+
         m.Materials.push_back(matBuff);
         Materials.push_back(Mat);
     }
@@ -420,6 +421,17 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
         if (!M.nVisibleInstances)
             continue;
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
+        if (M.selected){
+            glCullFace(GL_FRONT);
+            int glow = 1;
+            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            glm::mat4 T = glm::scale(M.transforms[0], glm::vec3(1.1f));
+            Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &T);
+            M.render();
+            glow = 0;
+            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            glCullFace(GL_BACK);
+        }
         Transform_Buffer.bufferSubData(sizeof(glm::mat4)*M.nInstances, transform_offset, M.transforms.data());
         M.render();
     }

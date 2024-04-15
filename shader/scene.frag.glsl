@@ -46,7 +46,7 @@ vec3 get_emissive()
 {
     if (emissive_index < 0)
         return vec3(0);
-    return 1.0-texture(TextureArray[emissive_index], iTexCoords).rgb;
+    return texture(TextureArray[emissive_index], iTexCoords).rgb;
 }
 
 void main()
@@ -56,4 +56,7 @@ void main()
     oAO_Roughness_Metallic = get_AO_roughness_metallic();
     oPosition = iPos;
     oEmissive = get_emissive();
+    if (glow != 0) {
+        oEmissive = vec3(1.0);
+    }
 }

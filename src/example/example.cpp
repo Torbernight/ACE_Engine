@@ -56,6 +56,7 @@ class MyGame : public application
     bool escape = false;
     bool vsync = false;
     bool showInfo = false;
+    float tick_rate = 1.0/60.0;
 
     ImGuiIO* imgui_IO = nullptr;
 
@@ -85,10 +86,11 @@ class MyGame : public application
     void init()
     {
         SDL_SetRelativeMouseMode(SDL_TRUE);
+        SDL_GL_SetSwapInterval(0);
         init_gl_parameters();
         init_imgui();
 
-        gameScene = scene::import_scene("assets/garden.gltf");
+        gameScene = scene::import_scene("assets/test.gltf");
         if (!gameScene){
             win.set_shouldClose(true);
             return;
@@ -160,6 +162,11 @@ class MyGame : public application
                 player.movement.sprint = pressed;
                 break;
 
+            case SDLK_e:
+                player.movement.use = !player.movement.use_key && pressed;
+                player.movement.use_key = pressed;
+                break;
+
             case SDLK_ESCAPE:
                 if (pressed)
                     escape = !escape;
@@ -171,7 +178,7 @@ class MyGame : public application
     {
         glm::vec2 r(E.xrel, -E.yrel);
         if (r != glm::vec2(0))
-            player.rotate(r*0.1f, dt);
+            player.rotate(r*0.1f, tick_rate);
     }
 
     void resize_window(int w, int h)
@@ -376,9 +383,9 @@ class MyGame : public application
         dir = glm::trunc(dir/maxcomp(dir));
         //player.m.vel = glm::reflect(player.m.vel, dir);
         player.m.vel *= (1.0f-glm::abs(dir));
-        player.m.pos = player.m.previousPos + player.m.vel * dt;
+        player.m.pos = player.m.previousPos + player.m.vel * tick_rate;
         SDL_assert(!glm::any(glm::isnan(player.m.pos)));
-        player.m.realVel = (player.m.pos - player.m.previousPos) / dt;
+        player.m.realVel = (player.m.pos - player.m.previousPos) / tick_rate;
         player.make_AABB();
     }
 
@@ -388,9 +395,9 @@ class MyGame : public application
         clampnan(dir);
         dir = glm::trunc(dir/maxcomp(dir));
         glm::vec3 Pos = glm::vec3(M.transforms[0][3]);
-        glm::vec3 previousPos = Pos - M.vel*dt;
+        glm::vec3 previousPos = Pos - M.vel*tick_rate;
         M.vel *= (1.0f-glm::abs(dir));
-        Pos = previousPos + M.vel * dt;
+        Pos = previousPos + M.vel * tick_rate;
         SDL_assert(!glm::any(glm::isnan(Pos)) && !glm::any(glm::isinf(Pos)));
         M.transforms[0][3] = glm::vec4(Pos, 1.0f);
     }
@@ -428,13 +435,13 @@ class MyGame : public application
         std::mutex mutex;
         for (auto &M : gameScene->Meshes)
         {
-            if (M.static_mesh)
+            if (M.static_mesh || M.grabbed)
                 continue;
             AABB box = M.bounding_box * M.transforms[0];
             std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
             [this, &mutex, &box, &M](const mesh& Mesh)
             {
-                if (!Mesh.static_mesh || Mesh.grabbable)
+                if (!Mesh.static_mesh || Mesh.grabbed || Mesh.grabbable)
                     return;
                 for(const glm::mat4& transform : Mesh.transforms){
                     AABB hitbox = Mesh.bounding_box * transform;
@@ -482,67 +489,108 @@ class MyGame : public application
         auto M = std::find_if(gameScene->Meshes.begin(), gameScene->Meshes.end(), 
         [this, &dist](const mesh& Mesh)
         {
+            if (Mesh.grabbed || Mesh.static_mesh || !Mesh.grabbable)
+                return false;
             float d = glm::distance(player.m.pos, (Mesh.bounding_box*Mesh.transforms[0]).get_center());
             bool closest = d < dist;
             dist = closest ? d : dist;
-            return meshIntersects(Mesh) && Mesh.grabbable && closest && !Mesh.grabbed;
+            return meshIntersects(Mesh) && closest && d <= 3.0f;
         });
         return M == gameScene->Meshes.end() ? nullptr : &(*M);
     }
 
-    void update_gameLogic()
+    void update_physics()
     {
-        process_events();
-        if(escape) {
-            show_config();
-            return;
-        }
-        if (player.m.pointed_object){
-            player.m.pointed_object->selected = false;
-        }
-        player.m.pointed_object = grab_mesh();
-        if (player.m.pointed_object){
-            player.m.pointed_object->selected = true;
-        }
-        if (player.movement.hasClicked) {
-            if (!player.m.grabbed_object){
-                player.m.grabbed_object = player.m.pointed_object; 
-                if (player.m.grabbed_object) {
-                    player.m.grabbed_object->static_mesh = true;
-                    player.m.grabbed_object->grabbed = true;
-                    player.m.grabbed_object->selected = false;
-                }
-            }
-            else {
-                player.m.grabbed_object->static_mesh = false;
-                player.m.grabbed_object->grabbed = false;
-                player.m.grabbed_object = nullptr;
-            }
-        }
         for (auto &M : gameScene->Meshes) 
         {
-            if (M.static_mesh)
+            if (M.static_mesh || M.grabbed)
                 continue;
 
             M.acc = glm::vec3(0.0f, -9.8f, 0.0f);
-            M.vel += M.acc*dt;
-            M.transforms[0][3] += glm::vec4(M.vel*dt, 0.0f);
+            M.vel += M.acc*tick_rate;
+            M.transforms[0][3] += glm::vec4(M.vel*tick_rate, 0.0f);
         }
-        player.move(dt);
+
         test_collision();
-        if (player.m.grabbed_object){
-            glm::mat4 &T = player.m.grabbed_object->transforms[0];
+        
+        if (player.m.grabbed_object)
+        {
             glm::mat4 trans = glm::mat4(glm::mat3(player.m.right, player.m.up, -player.m.front));
-            glm::vec4 pos = T[3];
-            pos = glm::vec4( player.m.pos + player.m.up*-0.125f + player.m.front*0.6f + player.m.right*0.1f, 1.0f );
-            trans[3] = pos;
-            T = trans;
+            trans[3] = glm::vec4(player.m.pos - player.m.up*0.125f + player.m.front*0.6f + player.m.right*0.1f, 1.0f);
+            player.m.grabbed_object->transforms[0] = trans;
+        }
+    }
+
+    void point_object()
+    {
+        mesh* object = player.m.pointed_object;
+
+        if (object)
+            object->selected = false;
+
+        if ((object = grab_mesh()))
+            object->selected = true;
+
+        player.m.pointed_object = object;
+    }
+
+    void grab_object()
+    {
+        mesh* grabbed = player.m.grabbed_object; 
+        if (!grabbed)
+        {
+            if ((grabbed = player.m.pointed_object)){
+                grabbed->grabbed = true;
+                grabbed->selected = false;
+                player.m.grabbed_object = grabbed;
+            }
+            return;
+        }
+        grabbed->grabbed = false;
+        player.m.grabbed_object = nullptr;
+    }
+
+    void check_selectable_object()
+    {
+        point_object();
+        if (player.movement.use)
+            grab_object();
+    }
+
+    void check_on_frustum()
+    {
+        std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(), [this](mesh& M){M.onFrustum(player.m.view_frustum);});
+    }
+
+    glm::mat4 interpolate_transform(const glm::mat4& V0, const glm::mat4& V1, float fac)
+    {
+        glm::quat R0 = glm::mat3(V0), R1 = glm::mat3(V1);
+        glm::quat R = glm::slerp(R0, R1, fac);
+        glm::vec4 P = glm::mix(V0[3], V1[3], fac);
+        glm::mat4 V(R);
+        V[3] = P;
+        return V;
+    }
+
+    void update_gameLogic()
+    {
+        static float accumulated = 0.0f;
+        accumulated += dt;
+        while (accumulated >= tick_rate)
+        {
+            process_events();
+            if(escape) {
+                show_config();
+                accumulated -= tick_rate;
+                continue;
+            }
+            check_selectable_object();
+            player.move(tick_rate);
+            update_physics();
+            accumulated -= tick_rate;
         }
         player.makeView();
-        std::for_each(std::execution::par, 
-        gameScene->Meshes.begin(), 
-        gameScene->Meshes.end(), 
-        [this](mesh& M){M.onFrustum(player.m.view_frustum);});
+        check_on_frustum();
     }
 
     inline void startFrame()

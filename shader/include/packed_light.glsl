@@ -30,10 +30,10 @@ struct packed_lightSource
     float color_r;
     float color_g;
     float color_b;
-    float color_a;
     float inner_cone;
     float outer_cone;
     uint type;
+    int shadow;
 };
 lightSource from_packed(in packed_lightSource P)
 {

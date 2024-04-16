@@ -237,7 +237,7 @@ void scene::load_lights(const aiScene* S)
         this->Lights[n].attenuation.x = iLight->mAttenuationConstant;
         this->Lights[n].attenuation.y = iLight->mAttenuationLinear;
         this->Lights[n].attenuation.z = iLight->mAttenuationQuadratic;
-        this->Lights[n].color = cast4D(iLight->mColorDiffuse);
+        this->Lights[n].color = cast3D(iLight->mColorDiffuse);
         this->Lights[n].direction = glm::normalize(cast3D(aiMatrix3x3(Transform) * iLight->mDirection));
         this->Lights[n].inner_cone = iLight->mAngleInnerCone;
         this->Lights[n].outer_cone = iLight->mAngleOuterCone;

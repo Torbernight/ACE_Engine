@@ -60,7 +60,7 @@ void main()
     float roughness = ARM.y;
     float metallic = 1.0 - ARM.z;
     
-    vec3 color = emissive;
+    vec3 color = vec3(0.0);
     for(int i = 0; i < nLights; i++)
     {
         lightSource L = from_packed(uLightSources[i]);
@@ -88,7 +88,7 @@ void main()
         vec3 H = normalize(V + normal);
         color += BRDF(H, V, normal, Ldir, roughness, metallic, albedo, radiance);
     }
-    oColor = vec4(color, 1.0);
+    oColor = vec4(emissive + color, 1.0);
     float cd = 0.025*LinearizeDepth(texture(uDepth, iTexCoords).r);
     float fog = exp2(-cd*cd);
     oColor.rgb = mix(vec3(0), oColor.rgb, fog);

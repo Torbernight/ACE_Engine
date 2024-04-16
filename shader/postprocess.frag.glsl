@@ -62,10 +62,9 @@ vec3 reinhard_extended_luminance(in vec3 v, in float max_white_l)
 vec3 crosshair(in vec3 color, in vec2 resolution)
 {
         vec2 TC = abs(iTexCoords*2.0-1.0);
-        if (all(lessThanEqual(TC,vec2(5/resolution))))
-        {
-                color = any(lessThanEqual(TC, 0.5/resolution)) ? vec3(1.0) : color;
-        }
+        vec2 a = step(vec2(0.0), 5.0/resolution - TC);
+        vec2 b = step(vec2(0.0), 0.5/resolution - TC);
+        color = mix(color, mix(color, 1.0-color, min(b.x+b.y,1.0)), a.x*a.y);
         return color;
 }
 

@@ -6,6 +6,11 @@ glm::vec3 cast3D(const aiVector3D &V)
     return glm::vec3(V.x, V.y, V.z);
 }
 inline static
+glm::vec3 cast3D(const aiColor3D &V)
+{
+    return glm::vec3(V.r, V.g, V.b);
+}
+inline static
 glm::vec4 cast4D(const aiColor3D &V)
 {
     return glm::vec4(V.r, V.g, V.b, 1.0f);

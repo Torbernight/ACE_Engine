@@ -21,15 +21,17 @@ class camera
 
     struct movement
     {
-        uint8_t forward  = 0;
-        uint8_t backward = 0;
-        uint8_t right    = 0;
-        uint8_t left     = 0;
-        uint8_t up       = 0;
-        uint8_t down     = 0;
-        uint8_t sprint   = 0;
-        uint8_t lclick   = 0;
+        uint8_t forward    = 0;
+        uint8_t backward   = 0;
+        uint8_t right      = 0;
+        uint8_t left       = 0;
+        uint8_t up         = 0;
+        uint8_t down       = 0;
+        uint8_t sprint     = 0;
+        uint8_t lclick     = 0;
         uint8_t hasClicked = 0;
+        uint8_t use_key    = 0;
+        uint8_t use        = 0;
     } movement;
 
 

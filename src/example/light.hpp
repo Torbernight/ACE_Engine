@@ -9,8 +9,9 @@ struct light
     glm::vec3 position;
     glm::vec3 direction;
     glm::vec3 attenuation;
-    glm::vec4 color;
+    glm::vec3 color;
     float inner_cone;
     float outer_cone;
     uint32_t type;
+    int shadow;
 };

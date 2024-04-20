@@ -39,6 +39,7 @@ struct material_buffer
     int Roughness_metallic;
     int Emissive;
     int glow = 0;
+    float alpha = 1.0f;
 };
 
 class scene
@@ -49,6 +50,7 @@ class scene
     std::vector<Material> Materials;
     std::vector<static_object>  static_objects;
     std::vector<dynamic_object> dynamic_objects;
+    std::vector<unsigned int> Mesh_indices;
 
     struct postprocess{
         float Brightness = 0.604;

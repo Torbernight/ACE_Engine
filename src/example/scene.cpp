@@ -425,6 +425,15 @@ void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_of
         auto& M = Meshes[Obj.m.Mesh];
         if (!M.m.visible)
             continue;
+        if (Obj.m_grabbed)
+        {
+            m.Materials[M.m.materialIndex].alpha = 0.5f;
+        }
+        else
+        {
+            m.Materials[M.m.materialIndex].alpha = 1.0f;
+        }
+
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
         if (Obj.m_selected)
         {
@@ -450,6 +459,16 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)
         M.bind();
+
+    //for (auto Index : Mesh_indices)
+    //{
+    //    auto& M = Meshes[Index];
+    //    if (!M.m.visible)
+    //        continue;
+    //    m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
+    //    Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
+    //    M.render();
+    //}
 
     render_static_objects(Transform_Buffer, transform_offset);
     render_dynamic_objects(Transform_Buffer, transform_offset);

@@ -11,10 +11,17 @@ layout(location=3) in vec3 iTangent;
 layout(location=4) in vec3 iBitangent;
 
 layout(location=0) out vec4 oAlbedo;
-layout(location=1) out vec3 oNormal;
-layout(location=2) out vec3 oPosition;
-layout(location=3) out vec3 oAO_Roughness_Metallic;
-layout(location=4) out vec3 oEmissive;
+layout(location=1) out vec4 oNormal;
+layout(location=2) out vec4 oPosition;
+layout(location=3) out vec4 oAO_Roughness_Metallic;
+layout(location=4) out vec4 oEmissive;
+
+const mat4 bayerMat = mat4(
+    0.0, 0.75, 0.1875, 0.9375,
+    0.75, 0.25, 0.6875, 0.4375,
+    0.1875, 0.6875, 0.0625, 0.8125,
+    0.9375, 0.4375, 0.8125, 0.3125
+);
 
 #include "materials.glsl"
 
@@ -51,12 +58,20 @@ vec3 get_emissive()
 
 void main()
 {
+    ivec2 index = ivec2(gl_FragCoord.xy); 
+    index = index%ivec2(4);
+    float A = bayerMat[index.y][index.x];
+
+    if(step(alpha, A) == 1.0){
+        discard;
+    }
+    
     oAlbedo = vec4(get_albedo(), 1.0);
-    oNormal = normalize(get_normal());
-    oAO_Roughness_Metallic = get_AO_roughness_metallic();
-    oPosition = iPos;
-    oEmissive = get_emissive();
+    oNormal = vec4(normalize(get_normal()), 1.0);
+    oAO_Roughness_Metallic = vec4(get_AO_roughness_metallic(), 1.0);
+    oPosition = vec4(iPos, 1.0);
+    oEmissive = vec4(get_emissive(), 1.0);
     if (glow != 0) {
-        oEmissive = vec3(1.0);
+        oEmissive = vec4(1.0);
     }
 }

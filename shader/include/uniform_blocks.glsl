@@ -23,4 +23,5 @@ layout(binding=5, std140) uniform GameState
     uint64_t uFrame;
     float uTime;
     float uDelta;
+    vec2 resolution;
 };

@@ -24,6 +24,7 @@ struct state_UBO
     uint64_t frame;
     float runtime;
     float delta;
+    glm::vec2 resolution;
 };
 
 struct camera_UBO
@@ -82,8 +83,8 @@ class MyGame : public application
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
-        //glEnable(GL_BLEND);
-        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     void init()
     {
@@ -342,10 +343,9 @@ class MyGame : public application
     void update_UBOs()
     {
         camera_UBO camBuff = {glm::vec4(player.getPos(), 0), glm::vec4(player.getFront(), 0), player.getNear(), player.getFar()};
-        state_UBO stateBuff = {frame, runtime, dt};
-
-        TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
         Camera_Buffer.bufferSubData(sizeof(camBuff), 0, &camBuff);
+        TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
+        state_UBO stateBuff = {frame, runtime, dt, {win.getWidth()*0.5f, win.getHeight()*0.5f}};
         State_Buffer.bufferSubData(sizeof(stateBuff), 0, &stateBuff);
     }
 #define XYZ(V) V.x, V.y, V.z
@@ -419,7 +419,6 @@ class MyGame : public application
         [this, &mutex](const static_object& Obj)
         {
             auto &M = gameScene->Meshes[Obj.m.Mesh];
-            //for(const glm::mat4& transform : M.m.transforms){
             const glm::mat4& transform = M.m.transform;
             AABB hitbox = M.m.bounding_box * transform;
             bool collision = 
@@ -430,7 +429,6 @@ class MyGame : public application
                 resolve_collision(hitbox);
                 mutex.unlock();
                 }
-            //}
         }
         );
     }
@@ -448,17 +446,16 @@ class MyGame : public application
             [this, &mutex, &box, &M, &Obj](const static_object& static_obj)
             {
                 auto &Mesh = gameScene->Meshes[static_obj.m.Mesh];
-                //for(const glm::mat4& transform : Mesh.m.transform){
                 const glm::mat4& transform =Mesh.m.transform;
                 AABB hitbox = Mesh.m.bounding_box * transform;
                 bool collision =  box.test_AABB(hitbox);
-                if (collision){
+                if (collision)
+                {
                     mutex.lock();
                     resolve_collision(box, Obj, hitbox);
                     box = M.m.bounding_box * M.m.transform;
                     mutex.unlock();
-                    }
-                //}
+                }
             }
         );
         }
@@ -586,6 +583,26 @@ class MyGame : public application
         player.m.pos = glm::vec3(T[3]);
     }
 
+    void order_objects()
+    {
+        auto &indices = gameScene->Mesh_indices;
+        auto &meshes = gameScene->Meshes;
+        indices.clear();
+
+        for(auto it = meshes.begin(); it != meshes.end(); it++){
+            if (!it->m.visible)
+                continue;
+            indices.push_back(it - meshes.begin());
+        }
+
+        std::sort(indices.begin(), indices.end(), 
+        [&meshes, this](unsigned int A, unsigned int B){
+            glm::vec3 P0 = (meshes[A].m.bounding_box*meshes[A].m.transform).get_center();
+            glm::vec3 P1 = (meshes[B].m.bounding_box*meshes[A].m.transform).get_center();
+            return glm::distance(P0, player.m.pos) <= glm::distance(P1, player.m.pos);
+        });
+    }
+
     void update_gameLogic()
     {
         static float accumulated = 0.0f;
@@ -609,11 +626,8 @@ class MyGame : public application
         }
         
         //float factor = accumulated/tick_rate;
-        //for (auto& M : gameScene->Meshes) {
-        //    if (!M.m.grabbable || M.m.static_mesh) {
-        //        continue;
-        //    }
-        //    M.m.transforms[0] = interpolate_transform(M.m.lastFrame_Transform, M.m.transforms[0], factor);
+        //for (auto& M : gameScene->dynamic_objects) {
+        //    M.m.transform = interpolate_transform(M.m.lastFrame_Transform, M.m.transform, factor);
         //}
         //glm::mat4 current_Transform = get_camera_transform();
         //glm::mat4 interpolated_transform = interpolate_transform(lastFrame_Transform, current_Transform, factor);
@@ -621,6 +635,7 @@ class MyGame : public application
         
         player.makeView();
         check_on_frustum();
+        //order_objects();
     }
 
     inline void startFrame()

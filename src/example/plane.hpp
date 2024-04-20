@@ -30,6 +30,14 @@ struct plane
         return sdist(p) >= 0;
     }
 
+    bool intersects_triangle(const glm::vec3& A, const glm::vec3& B, const glm::vec3& C)
+    {
+        float sa = glm::sign(sdist(A));
+        float sb = glm::sign(sdist(B));
+        float sc = glm::sign(sdist(C));
+        return sa == sb && sb == sc && sc != 0.0f;
+    }
+
     bool isOnOrForwardPlane(const AABB& box) const
     {
         glm::vec3 e = box.get_extent();

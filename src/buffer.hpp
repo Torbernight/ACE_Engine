@@ -6,6 +6,19 @@ class buffer
 
     buffer(int target);
 
+    buffer(const buffer& B) :
+    m(B.m)
+    {
+        const_cast<buffer&>(B).m = {};
+    }
+    buffer& operator=(const buffer& B)
+    {
+        buffer temp(B);
+        m = temp.m;
+        temp.m = {};
+        return *this;
+    }
+
     ~buffer();
 
     void generate();
@@ -30,6 +43,7 @@ class buffer
         int size = 0;
         int binding = 0;
 
+        members() = default;
         members(int Target) : target(Target) {}
         members(int Size, int Target) :  target(Target), size(Size) {}
         members(int Size, int Binding, int Target) :  target(Target), size(Size), binding(Binding) {}

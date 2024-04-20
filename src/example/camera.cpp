@@ -64,9 +64,9 @@ void camera::makeView()
     m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
-void camera::rotate(const glm::vec2& r, float dt)
+void camera::rotate(float dt)
 {
-    m.rotation += r*dt;
+    m.rotation += m.delta_rotation*dt;
 
     m.rotation.x = fmodf(m.rotation.x, 2*M_PIf);
     m.rotation.y = glm::clamp(m.rotation.y, -M_PI_2f*0.98f, M_PI_2f*0.98f);

@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <execution>
+#include <glm/gtc/quaternion.hpp>
 
 #include "../application.hpp"
 #include "../vertexArray.hpp"
@@ -56,6 +57,7 @@ class MyGame : public application
     bool escape = false;
     bool vsync = false;
     bool showInfo = false;
+    float mouse_sensitivity = 10.0f;
     float tick_rate = 1.0/60.0;
 
     ImGuiIO* imgui_IO = nullptr;
@@ -177,8 +179,7 @@ class MyGame : public application
     void processMouseEvents(const SDL_MouseMotionEvent& E)
     {
         glm::vec2 r(E.xrel, -E.yrel);
-        if (r != glm::vec2(0))
-            player.rotate(r*0.1f, tick_rate);
+        player.m.delta_rotation = r*mouse_sensitivity*0.01f;
     }
 
     void resize_window(int w, int h)
@@ -222,6 +223,10 @@ class MyGame : public application
 
         if (ImGui::Checkbox("VSync", &vsync))
             setVSync();
+
+        ImGui::SeparatorText("Controls");
+
+        ImGui::DragFloat("Mouse Sensitivity", &mouse_sensitivity, 1.0f, 1.0f, 100.0f);
 
         ImGui::SeparatorText("Post Processing");
 
@@ -493,30 +498,45 @@ class MyGame : public application
                 return false;
             float d = glm::distance(player.m.pos, (Mesh.bounding_box*Mesh.transforms[0]).get_center());
             bool closest = d < dist;
+            //I don't think this works the way I intend it to
             dist = closest ? d : dist;
             return meshIntersects(Mesh) && closest && d <= 3.0f;
         });
         return M == gameScene->Meshes.end() ? nullptr : &(*M);
     }
 
+    static glm::mat4 transform_from_basis(const glm::vec3& R, const glm::vec3& U, const glm::vec3& F, const glm::vec3& P)
+    {
+        return glm::mat4(
+            R.x, R.y, R.z, 0.0f,
+            U.x, U.y, U.z, 0.0f,
+            F.x, F.y, F.z, 0.0f,
+            P.x, P.y, P.z, 1.0f
+        );
+    }
+
     void update_physics()
     {
         for (auto &M : gameScene->Meshes) 
         {
+            M.lastFrame_Transform = M.transforms[0];
+
             if (M.static_mesh || M.grabbed)
                 continue;
 
-            M.acc = glm::vec3(0.0f, -9.8f, 0.0f);
-            M.vel += M.acc*tick_rate;
-            M.transforms[0][3] += glm::vec4(M.vel*tick_rate, 0.0f);
+            //M.acc = glm::vec3(0.0f, -9.8f, 0.0f);
+            //M.vel += glm::vec3(0.0f, -9.8f*tick_rate, 0.0f);
+            //M.transforms[0][3] += glm::vec4(M.vel*tick_rate, 0.0f);
+            M.vel.y -= 9.8f*tick_rate;
+            M.transforms[0][3].y += M.vel.y*tick_rate;
         }
 
         test_collision();
         
         if (player.m.grabbed_object)
         {
-            glm::mat4 trans = glm::mat4(glm::mat3(player.m.right, player.m.up, -player.m.front));
-            trans[3] = glm::vec4(player.m.pos - player.m.up*0.125f + player.m.front*0.6f + player.m.right*0.1f, 1.0f);
+            glm::vec3 pos = player.m.pos - player.m.up*0.125f + player.m.front*0.6f + player.m.right*0.1f;
+            glm::mat4 trans = transform_from_basis(player.m.right, player.m.up, -player.m.front, pos);
             player.m.grabbed_object->transforms[0] = trans;
         }
     }
@@ -534,7 +554,7 @@ class MyGame : public application
         player.m.pointed_object = object;
     }
 
-    void grab_object()
+    void grab_object() //a.k.a press use while pointing a selectable object
     {
         mesh* grabbed = player.m.grabbed_object; 
         if (!grabbed)
@@ -572,23 +592,65 @@ class MyGame : public application
         return V;
     }
 
+    glm::mat4 get_camera_transform()
+    {
+        return 
+        glm::mat4(
+            player.m.right.x, player.m.right.y, player.m.right.z, 0.0f,
+            player.m.up.x, player.m.up.y, player.m.up.z, 0.0f,
+            -player.m.front.x, -player.m.front.y, -player.m.front.z, 0.0f,
+            player.m.pos.x, player.m.pos.y, player.m.pos.z, 1.0f
+        );
+    }
+
+    void set_camera_transform(const glm::mat4& T)
+    {
+        player.m.right = glm::mat3(T) * glm::vec3(1.0,0.0,0.0);
+        player.m.up = glm::mat3(T) * glm::vec3(0.0,1.0,0.0);
+        player.m.front = glm::mat3(T) * glm::vec3(0.0,0.0,-1.0);
+        player.m.pos = glm::vec3(T[3]);
+    }
+
     void update_gameLogic()
     {
         static float accumulated = 0.0f;
         accumulated += dt;
+        glm::mat4 lastFrame_Transform = get_camera_transform();
+
         while (accumulated >= tick_rate)
         {
+            lastFrame_Transform = get_camera_transform();
+            player.m.delta_rotation = glm::vec2(0.0f);
             process_events();
-            if(escape) {
-                show_config();
+            if (escape){
                 accumulated -= tick_rate;
                 continue;
             }
             check_selectable_object();
             player.move(tick_rate);
+            player.rotate(tick_rate);
             update_physics();
             accumulated -= tick_rate;
         }
+        
+        float factor = accumulated/tick_rate;
+        for (auto& M : gameScene->Meshes) {
+            if (!M.grabbable || M.static_mesh) {
+                continue;
+            }
+            M.transforms[0] = interpolate_transform(M.lastFrame_Transform, M.transforms[0], factor);
+        }
+        glm::mat4 current_Transform = get_camera_transform();
+        glm::mat4 interpolated_transform = interpolate_transform(lastFrame_Transform, current_Transform, factor);
+        set_camera_transform(interpolated_transform);
+        //std::sort(gameScene->Meshes.begin(), gameScene->Meshes.end(), 
+        //[this](const mesh& A, const mesh& B){
+        //    return 
+        //    glm::distance(player.m.pos, (A.bounding_box*A.transforms[0]).get_center()) 
+        //    < 
+        //    glm::distance(player.m.pos, (B.bounding_box*B.transforms[0]).get_center());
+        //    });
+        
         player.makeView();
         check_on_frustum();
     }
@@ -619,6 +681,10 @@ class MyGame : public application
             startFrame();
 
             update_gameLogic();
+
+            if(escape) {
+                show_config();
+            }
 
             info_window();
             

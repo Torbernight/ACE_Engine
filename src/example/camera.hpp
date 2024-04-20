@@ -37,7 +37,7 @@ class camera
 
     void move(float dt);
 
-    void rotate(const glm::vec2& r, float dt);
+    void rotate(float dt);
 
     void set_update(bool update)
     {
@@ -117,6 +117,7 @@ class camera
         glm::vec3 right = glm::vec3(1.0,0.0,0.0);
         glm::vec3 up = glm::vec3(0.0,1.0,0.0);
         glm::vec2 rotation = glm::vec2(0.0);
+        glm::vec2 delta_rotation = glm::vec2(0.0);
         glm::vec3 pos = glm::vec3(0.0, 0.0, -4.0);
         glm::vec3 vel = glm::vec3(0.0);
         glm::vec3 acc = glm::vec3(0.0);

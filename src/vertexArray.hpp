@@ -47,6 +47,22 @@ class vertexArray
         m.nComponents = Attributes.size();
     }
 
+    vertexArray(const vertexArray& V) :
+    Attributes(V.Attributes), m(V.m)
+    {
+        auto& v = const_cast<vertexArray&>(V);
+        v.m = {};
+    }
+
+    vertexArray& operator=(const vertexArray& V)
+    {
+        vertexArray temp(V);
+        m = temp.m;
+        Attributes = temp.Attributes;
+        temp.m = {};
+        return *this;
+    }
+
     unsigned int getnComponents() const {return m.nComponents;} 
 
     private:

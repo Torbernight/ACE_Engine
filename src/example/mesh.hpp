@@ -46,6 +46,7 @@ class mesh
     std::vector<vertex> vertices;
     std::vector<unsigned int> indices;
     AABB bounding_box;
+    glm::mat4 lastFrame_Transform = glm::mat4(1.0f);
     std::vector<glm::mat4> transforms;
     unsigned int nInstances = 1;
     unsigned int nVisibleInstances = 1;

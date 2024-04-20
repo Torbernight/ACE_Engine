@@ -421,7 +421,7 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
         if (!M.nVisibleInstances)
             continue;
         m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
-        if (M.selected){
+        if (M.selected && !M.grabbed){
             glCullFace(GL_FRONT);
             int glow = 1;
             m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);

@@ -135,10 +135,11 @@
 			},
 			"mesh":4,
 			"name":"Floor",
-			"translation":[
+			"rotation":[
 				0,
-				-0.12499991059303284,
-				0
+				0,
+				1,
+				4.371138828673793e-08
 			]
 		},
 		{
@@ -157,7 +158,7 @@
 			],
 			"translation":[
 				0,
-				1.7000000476837158,
+				1.899999976158142,
 				0
 			]
 		},
@@ -167,12 +168,6 @@
 			},
 			"mesh":5,
 			"name":"Ceil",
-			"rotation":[
-				-1,
-				0,
-				0,
-				4.371138828673793e-08
-			],
 			"translation":[
 				0,
 				3.125148296356201,
@@ -205,7 +200,7 @@
 			"name":"Teapot",
 			"translation":[
 				0,
-				0.1206892728805542,
+				0.3847335875034332,
 				0
 			]
 		},
@@ -246,16 +241,13 @@
 			"normalTexture":{
 				"index":0
 			},
-			"occlusionTexture":{
-				"index":1
-			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":2
+					"index":1
 				},
 				"metallicFactor":0,
 				"metallicRoughnessTexture":{
-					"index":3
+					"index":2
 				}
 			}
 		},
@@ -266,18 +258,15 @@
 			},
 			"name":"concrete",
 			"normalTexture":{
-				"index":4
-			},
-			"occlusionTexture":{
-				"index":5
+				"index":3
 			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":6
+					"index":4
 				},
 				"metallicFactor":0,
 				"metallicRoughnessTexture":{
-					"index":7
+					"index":5
 				}
 			}
 		},
@@ -285,14 +274,14 @@
 			"doubleSided":true,
 			"name":"Rusty metal",
 			"normalTexture":{
-				"index":8
+				"index":6
 			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":9
+					"index":7
 				},
 				"metallicRoughnessTexture":{
-					"index":10
+					"index":8
 				}
 			}
 		},
@@ -300,26 +289,26 @@
 			"doubleSided":true,
 			"name":"Teapot",
 			"normalTexture":{
-				"index":11
+				"index":9
 			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":12
+					"index":10
 				},
 				"metallicRoughnessTexture":{
-					"index":13
+					"index":11
 				}
 			}
 		},
 		{
 			"doubleSided":true,
 			"emissiveTexture":{
-				"index":14
+				"index":12
 			},
 			"name":"Material",
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":15
+					"index":13
 				},
 				"metallicFactor":0
 			}
@@ -517,15 +506,7 @@
 		},
 		{
 			"sampler":0,
-			"source":13
-		},
-		{
-			"sampler":0,
-			"source":14
-		},
-		{
-			"sampler":0,
-			"source":14
+			"source":12
 		}
 	],
 	"images":[
@@ -533,11 +514,6 @@
 			"mimeType":"image/png",
 			"name":"redbricks2b-normal",
 			"uri":"textures/redbricks2b-normal.png"
-		},
-		{
-			"mimeType":"image/png",
-			"name":"redbricks2b-ao",
-			"uri":"textures/redbricks2b-ao.png"
 		},
 		{
 			"mimeType":"image/png",
@@ -553,11 +529,6 @@
 			"mimeType":"image/png",
 			"name":"degraded-concrete_normal-ogl",
 			"uri":"textures/degraded-concrete_normal-ogl.png"
-		},
-		{
-			"mimeType":"image/png",
-			"name":"degraded-concrete_ao",
-			"uri":"textures/degraded-concrete_ao.png"
 		},
 		{
 			"mimeType":"image/png",
@@ -759,7 +730,7 @@
 			],
 			"min":[
 				-9.26987361907959,
-				-0.125,
+				-0.12500301003456116,
 				-9.26987361907959
 			],
 			"type":"VEC3"
@@ -794,7 +765,7 @@
 			"count":24,
 			"max":[
 				9.26987361907959,
-				0.12514910101890564,
+				0.12515053153038025,
 				9.26987361907959
 			],
 			"min":[

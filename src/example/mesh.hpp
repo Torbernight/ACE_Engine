@@ -39,27 +39,34 @@ class mesh
         }
     };
     
-    std::string Name;
-    vertexArray VAO;
-    buffer VBO;
-    buffer EBO;
-    std::vector<vertex> vertices;
-    std::vector<unsigned int> indices;
-    AABB bounding_box;
-    glm::mat4 lastFrame_Transform = glm::mat4(1.0f);
-    std::vector<glm::mat4> transforms;
-    unsigned int nInstances = 1;
-    unsigned int nVisibleInstances = 1;
-    unsigned int materialIndex = 0;
-    bool discard = false;
-    bool collision = true;
-    bool static_mesh = true;
-    bool grabbable = false;
-    bool selected = false;
-    bool grabbed = false;
+    struct members
+    {
+        std::string Name;
+        vertexArray VAO;
+        buffer VBO;
+        buffer EBO;
+        std::vector<vertex> vertices;
+        std::vector<unsigned int> indices;
+        AABB bounding_box;
+        glm::mat4 lastFrame_Transform = glm::mat4(1.0f);
+        //std::vector<glm::mat4> transforms;
+        glm::mat4 transform;
+        bool visible = true;
+        unsigned int materialIndex = 0;
+        bool discard = false;
 
-    glm::vec3 acc =   glm::vec3(0.0f);
-    glm::vec3 vel = glm::vec3(0.0f);
+        members():
+        VAO({
+            {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
+            {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
+            {2, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, normal)},
+            {3, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, tangent)},
+            {4, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, bitangent)}
+            }), 
+        
+        VBO(GL_ARRAY_BUFFER), EBO(GL_ELEMENT_ARRAY_BUFFER)
+        {}
+    } m;
 
     void apply_transform();
     void join_identical_vertices();
@@ -74,19 +81,6 @@ class mesh
         return isInstance(M); 
     }
 
-    mesh()
-    : 
-    VAO({
-        {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
-        {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
-        {2, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, normal)},
-        {3, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, tangent)},
-        {4, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, bitangent)}
-        }), 
-    
-    VBO(GL_ARRAY_BUFFER), EBO(GL_ELEMENT_ARRAY_BUFFER)
-    {}
-    
     void init();
     void render();
 

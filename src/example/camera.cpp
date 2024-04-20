@@ -64,6 +64,16 @@ void camera::makeView()
     m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
+glm::mat4 camera::get_transform() const
+{
+    return glm::mat4(
+        m.right.x, m.right.y, m.right.z, 0.0f,
+        m.up.x, m.up.y, m.up.z, 0.0f,
+        -m.front.x, -m.front.y, -m.front.z, 0.0f,
+        m.pos.x, m.pos.y, m.pos.z, 1.0f
+    );
+}
+
 void camera::rotate(float dt)
 {
     m.rotation += m.delta_rotation*dt;

@@ -1,45 +1,11 @@
 #pragma once
 
 #include "AABB.hpp"
+#include "plane.hpp"
 #include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
 #include <glm/geometric.hpp>
-
-struct plane
-{
-    glm::vec3 normal;
-    float d;
-
-    plane() = default;
-
-    plane(const glm::vec3& n, float dist): normal(glm::normalize(n)), d(dist) {}
-
-    plane(const glm::vec3& n, const glm::vec3& p): normal(glm::normalize(n))
-    {
-        d = glm::dot(n,p);
-    }
-
-    float sdist(const glm::vec3 &p) const
-    {
-        return glm::dot(normal,p) - d;
-    }
-
-    bool testPoint(const glm::vec3 &p) const
-    {
-        return sdist(p) >= 0;
-    }
-
-    bool isOnOrForwardPlane(const AABB& box) const
-    {
-        glm::vec3 e = box.get_extent();
-        glm::vec3 c = box.get_center();
-        // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
-        return sdist(c)+glm::dot(glm::abs(normal), e) >= 0;
-    }
-
-};
 
 struct frustum
 {

@@ -5,19 +5,12 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "frustum.hpp"
-#include "mesh.hpp"
-
-class scene;
-
-//fuck this I'm fucking tired fuck off
-class MyGame;
+#include "object.hpp"
 
 class camera
 {
     public:
 
-    friend class scene;
-    friend class MyGame;
 
     struct movement
     {
@@ -98,9 +91,7 @@ class camera
     void setPos(const glm::vec3& pos)
     {
         m.pos = pos;
-        //glm::vec3 bcenter = glm::vec3(pos.x, pos.y-0.85f, pos.z);
-        //glm::vec3 bbounds = glm::vec3(0.5f, 0.85f, 0.5f);
-        //this->m.bounding_box = AABB(bcenter+bbounds*0.5f, bcenter-bbounds*0.5f);
+        make_AABB();
     }
 
     void setAspect(float aspect)
@@ -110,7 +101,7 @@ class camera
 
     void make_AABB();
 
-    private:
+    glm::mat4 get_transform() const;
 
     struct members{
         glm::vec3 front = glm::vec3(0.0,0.0,-1.0);
@@ -134,13 +125,16 @@ class camera
         frustum view_frustum;
         AABB bounding_box;
         bool collision = false;
-        mesh* grabbed_object = nullptr;
-        mesh* pointed_object = nullptr;
+
+        dynamic_object* grabbed_object = nullptr;
+        dynamic_object* pointed_object = nullptr;
 
         glm::vec3 previousPos = glm::vec3(0.0);
         glm::vec3 realVel = glm::vec3(0.0);
 
     } m;
+
+    private:
 
     inline static float s_walk_speed = 3.0f;
     inline static float s_sprint_speed = 6.0f;

@@ -246,10 +246,8 @@ class MyGame : public application
         ImGui::SeparatorText("Scene Info");
 
         for (const auto &M : gameScene->Meshes) {
-            if (M.discard)
-                continue;
-            ImGui::Text("Mesh name: %s", M.Name.c_str());
-            ImGui::Text("instances: %u", M.nInstances);
+            ImGui::Text("Mesh name: %s", M.m.Name.c_str());
+            ImGui::Text("visible: %u", M.m.visible);
             ImGui::Separator();
         }
 
@@ -364,6 +362,7 @@ class MyGame : public application
         ImGui::Text("position: %f %f %f", XYZ(player.m.pos));
         ImGui::Text("speed: %f %f %f", XYZ(player.m.realVel));
         ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
+        ImGui::Text("delta angle: %f %f", XY(glm::degrees(player.m.delta_rotation)));
         ImGui::Text("collision: %s",player.m.collision ? "true" : "false");
         ImGui::End();
     }
@@ -389,22 +388,23 @@ class MyGame : public application
         //player.m.vel = glm::reflect(player.m.vel, dir);
         player.m.vel *= (1.0f-glm::abs(dir));
         player.m.pos = player.m.previousPos + player.m.vel * tick_rate;
-        SDL_assert(!glm::any(glm::isnan(player.m.pos)));
+        //SDL_assert(!glm::any(glm::isnan(player.m.pos)));
         player.m.realVel = (player.m.pos - player.m.previousPos) / tick_rate;
         player.make_AABB();
     }
 
-    void resolve_collision(const AABB& box, mesh& M, const AABB& hitbox)
+    void resolve_collision(const AABB& box, dynamic_object& Obj, const AABB& hitbox)
     {
+        auto &M = gameScene->Meshes[Obj.m.Mesh];
         glm::vec3 dir = (box.get_center() - hitbox.get_center()) / hitbox.get_extent();
         clampnan(dir);
         dir = glm::trunc(dir/maxcomp(dir));
-        glm::vec3 Pos = glm::vec3(M.transforms[0][3]);
-        glm::vec3 previousPos = Pos - M.vel*tick_rate;
-        M.vel *= (1.0f-glm::abs(dir));
-        Pos = previousPos + M.vel * tick_rate;
-        SDL_assert(!glm::any(glm::isnan(Pos)) && !glm::any(glm::isinf(Pos)));
-        M.transforms[0][3] = glm::vec4(Pos, 1.0f);
+        glm::vec3 Pos = glm::vec3(M.m.transform[3]);
+        glm::vec3 previousPos = Pos - Obj.vel*tick_rate;
+        Obj.vel *= (1.0f-glm::abs(dir));
+        Pos = previousPos + Obj.vel * tick_rate;
+        //SDL_assert(!glm::any(glm::isnan(Pos)) && !glm::any(glm::isinf(Pos)));
+        M.m.transform[3] = glm::vec4(Pos, 1.0f);
     }
 
     void test_player_collision()
@@ -415,22 +415,22 @@ class MyGame : public application
         std::mutex mutex;
         player.m.collision = false;
         //TODO space partitioning
-        std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
-        [this, &mutex](const mesh& M)
+        std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
+        [this, &mutex](const static_object& Obj)
         {
-            if (!M.collision || M.grabbable)
-                return;
-            for(const glm::mat4& transform : M.transforms){
-                AABB hitbox = M.bounding_box * transform;
-                bool collision = 
-                player.m.bounding_box.test_AABB(hitbox); //maybe vulnerable to race condition?
-                if (collision){
-                    mutex.lock();
-                    player.m.collision = true;
-                    resolve_collision(hitbox);
-                    mutex.unlock();
+            auto &M = gameScene->Meshes[Obj.m.Mesh];
+            //for(const glm::mat4& transform : M.m.transforms){
+            const glm::mat4& transform = M.m.transform;
+            AABB hitbox = M.m.bounding_box * transform;
+            bool collision = 
+            player.m.bounding_box.test_AABB(hitbox); //maybe vulnerable to race condition?
+            if (collision){
+                mutex.lock();
+                player.m.collision = true;
+                resolve_collision(hitbox);
+                mutex.unlock();
                 }
-            }
+            //}
         }
         );
     }
@@ -438,26 +438,27 @@ class MyGame : public application
     void test_object_collision()
     {
         std::mutex mutex;
-        for (auto &M : gameScene->Meshes)
+        for (auto &Obj : gameScene->dynamic_objects)
         {
-            if (M.static_mesh || M.grabbed)
+            if (Obj.m_grabbed)
                 continue;
-            AABB box = M.bounding_box * M.transforms[0];
-            std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(),
-            [this, &mutex, &box, &M](const mesh& Mesh)
+            auto &M = gameScene->Meshes[Obj.m.Mesh];
+            AABB box = M.m.bounding_box * M.m.transform;
+            std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
+            [this, &mutex, &box, &M, &Obj](const static_object& static_obj)
             {
-                if (!Mesh.static_mesh || Mesh.grabbed || Mesh.grabbable)
-                    return;
-                for(const glm::mat4& transform : Mesh.transforms){
-                    AABB hitbox = Mesh.bounding_box * transform;
-                    bool collision =  box.test_AABB(hitbox);
-                    if (collision){
-                        mutex.lock();
-                        resolve_collision(box, M, hitbox);
-                        box = M.bounding_box * M.transforms[0];
-                        mutex.unlock();
+                auto &Mesh = gameScene->Meshes[static_obj.m.Mesh];
+                //for(const glm::mat4& transform : Mesh.m.transform){
+                const glm::mat4& transform =Mesh.m.transform;
+                AABB hitbox = Mesh.m.bounding_box * transform;
+                bool collision =  box.test_AABB(hitbox);
+                if (collision){
+                    mutex.lock();
+                    resolve_collision(box, Obj, hitbox);
+                    box = M.m.bounding_box * M.m.transform;
+                    mutex.unlock();
                     }
-                }
+                //}
             }
         );
         }
@@ -482,99 +483,73 @@ class MyGame : public application
         return glm::vec2(tNear, tFar);
     };
 
-    bool meshIntersects(const mesh& M, unsigned int instance = 0)
+    bool meshIntersects(const mesh& M)
     {
-        glm::vec2 intersection = intersectAABB(player.m.pos, player.m.front, M.bounding_box*M.transforms[instance]);
+        glm::vec2 intersection = intersectAABB(player.m.pos, player.m.front, M.m.bounding_box*M.m.transform);
         return intersection.x <= intersection.y;
     }
 
-    mesh* grab_mesh()
+    dynamic_object* select_object()
     {
         float dist = FLT_MAX;
-        auto M = std::find_if(gameScene->Meshes.begin(), gameScene->Meshes.end(), 
-        [this, &dist](const mesh& Mesh)
+        auto M = std::find_if(gameScene->dynamic_objects.begin(), gameScene->dynamic_objects.end(), 
+        [this, &dist](const dynamic_object& Obj)
         {
-            if (Mesh.grabbed || Mesh.static_mesh || !Mesh.grabbable)
+            if (Obj.m_grabbed)
                 return false;
-            float d = glm::distance(player.m.pos, (Mesh.bounding_box*Mesh.transforms[0]).get_center());
+            auto &M = gameScene->Meshes[Obj.m.Mesh];
+            float d = glm::distance(player.m.pos, (M.m.bounding_box*M.m.transform).get_center());
             bool closest = d < dist;
             //I don't think this works the way I intend it to
             dist = closest ? d : dist;
-            return meshIntersects(Mesh) && closest && d <= 3.0f;
+            return meshIntersects(M) && closest && d <= 3.0f;
         });
-        return M == gameScene->Meshes.end() ? nullptr : &(*M);
-    }
-
-    static glm::mat4 transform_from_basis(const glm::vec3& R, const glm::vec3& U, const glm::vec3& F, const glm::vec3& P)
-    {
-        return glm::mat4(
-            R.x, R.y, R.z, 0.0f,
-            U.x, U.y, U.z, 0.0f,
-            F.x, F.y, F.z, 0.0f,
-            P.x, P.y, P.z, 1.0f
-        );
+        return M == gameScene->dynamic_objects.end() ? nullptr : &(*M);
     }
 
     void update_physics()
     {
-        for (auto &M : gameScene->Meshes) 
-        {
-            M.lastFrame_Transform = M.transforms[0];
-
-            if (M.static_mesh || M.grabbed)
-                continue;
-
-            //M.acc = glm::vec3(0.0f, -9.8f, 0.0f);
-            //M.vel += glm::vec3(0.0f, -9.8f*tick_rate, 0.0f);
-            //M.transforms[0][3] += glm::vec4(M.vel*tick_rate, 0.0f);
-            M.vel.y -= 9.8f*tick_rate;
-            M.transforms[0][3].y += M.vel.y*tick_rate;
-        }
+        for (auto &Obj : gameScene->dynamic_objects) 
+            Obj.update(&player, gameScene, tick_rate);
 
         test_collision();
-        
+
         if (player.m.grabbed_object)
-        {
-            glm::vec3 pos = player.m.pos - player.m.up*0.125f + player.m.front*0.6f + player.m.right*0.1f;
-            glm::mat4 trans = transform_from_basis(player.m.right, player.m.up, -player.m.front, pos);
-            player.m.grabbed_object->transforms[0] = trans;
-        }
+            player.m.grabbed_object->update_grabbed(&player, gameScene);
+
     }
 
     void point_object()
     {
-        mesh* object = player.m.pointed_object;
+        dynamic_object* object = player.m.pointed_object;
 
         if (object)
-            object->selected = false;
+            return;
 
-        if ((object = grab_mesh()))
-            object->selected = true;
+        if ((object = select_object()))
+            object->m_selected = true;
 
         player.m.pointed_object = object;
     }
 
-    void grab_object() //a.k.a press use while pointing a selectable object
+    void use_object()
     {
-        mesh* grabbed = player.m.grabbed_object; 
+        dynamic_object* grabbed = player.m.grabbed_object; 
         if (!grabbed)
         {
             if ((grabbed = player.m.pointed_object)){
-                grabbed->grabbed = true;
-                grabbed->selected = false;
-                player.m.grabbed_object = grabbed;
+                grabbed->grab(&player);
             }
             return;
         }
-        grabbed->grabbed = false;
-        player.m.grabbed_object = nullptr;
+        grabbed->use(&player);
     }
 
     void check_selectable_object()
     {
         point_object();
         if (player.movement.use)
-            grab_object();
+            use_object();
     }
 
     void check_on_frustum()
@@ -633,23 +608,16 @@ class MyGame : public application
             accumulated -= tick_rate;
         }
         
-        float factor = accumulated/tick_rate;
-        for (auto& M : gameScene->Meshes) {
-            if (!M.grabbable || M.static_mesh) {
-                continue;
-            }
-            M.transforms[0] = interpolate_transform(M.lastFrame_Transform, M.transforms[0], factor);
-        }
-        glm::mat4 current_Transform = get_camera_transform();
-        glm::mat4 interpolated_transform = interpolate_transform(lastFrame_Transform, current_Transform, factor);
-        set_camera_transform(interpolated_transform);
-        //std::sort(gameScene->Meshes.begin(), gameScene->Meshes.end(), 
-        //[this](const mesh& A, const mesh& B){
-        //    return 
-        //    glm::distance(player.m.pos, (A.bounding_box*A.transforms[0]).get_center()) 
-        //    < 
-        //    glm::distance(player.m.pos, (B.bounding_box*B.transforms[0]).get_center());
-        //    });
+        //float factor = accumulated/tick_rate;
+        //for (auto& M : gameScene->Meshes) {
+        //    if (!M.m.grabbable || M.m.static_mesh) {
+        //        continue;
+        //    }
+        //    M.m.transforms[0] = interpolate_transform(M.m.lastFrame_Transform, M.m.transforms[0], factor);
+        //}
+        //glm::mat4 current_Transform = get_camera_transform();
+        //glm::mat4 interpolated_transform = interpolate_transform(lastFrame_Transform, current_Transform, factor);
+        //set_camera_transform(interpolated_transform);
         
         player.makeView();
         check_on_frustum();

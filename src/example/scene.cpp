@@ -7,12 +7,12 @@
 
 void scene::combine_as_instance(mesh& A, mesh& Instance)
 {
-    A.nInstances += Instance.nInstances;
-    for (int n = 0; n < Instance.nInstances; n++)
-    {
-        A.transforms.push_back(Instance.transforms[n]);
-    }
-    Instance.discard = true;
+    //A.m.nInstances += Instance.m.nInstances;
+    //for (int n = 0; n < Instance.m.nInstances; n++)
+    //{
+    //    A.m.transforms.push_back(Instance.m.transforms[n]);
+    //}
+    //Instance.m.discard = true;
 }
 
 void scene::combine_meshes(mesh& A, mesh& B)
@@ -20,40 +20,40 @@ void scene::combine_meshes(mesh& A, mesh& B)
     mesh AB;
     A.apply_transform();
     B.apply_transform();
-    AB.bounding_box = AABB(A.bounding_box,B.bounding_box);
+    AB.m.bounding_box = AABB(A.m.bounding_box,B.m.bounding_box);
 
-    AB.vertices.reserve(A.vertices.size() + B.vertices.size());
-    AB.vertices.insert(AB.vertices.end(), A.vertices.begin(), A.vertices.end());
-    AB.vertices.insert(AB.vertices.end(), B.vertices.begin(), B.vertices.end());
-    AB.indices.reserve(A.indices.size() + B.indices.size() + 1);
-    AB.indices.insert(AB.indices.end(), A.indices.begin(), A.indices.end());
-    AB.indices.push_back(UINT32_MAX);
-    for(auto I : B.indices)
-        AB.indices.push_back(I+A.vertices.size());
+    AB.m.vertices.reserve(A.m.vertices.size() + B.m.vertices.size());
+    AB.m.vertices.insert(AB.m.vertices.end(), A.m.vertices.begin(), A.m.vertices.end());
+    AB.m.vertices.insert(AB.m.vertices.end(), B.m.vertices.begin(), B.m.vertices.end());
+    AB.m.indices.reserve(A.m.indices.size() + B.m.indices.size() + 1);
+    AB.m.indices.insert(AB.m.indices.end(), A.m.indices.begin(), A.m.indices.end());
+    AB.m.indices.push_back(UINT32_MAX);
+    for(auto I : B.m.indices)
+        AB.m.indices.push_back(I+A.m.vertices.size());
 
-    AB.materialIndex = A.materialIndex;
-    AB.Name = A.Name;
-    AB.transforms.push_back(glm::mat4(1.0f));
+    AB.m.materialIndex = A.m.materialIndex;
+    AB.m.Name = A.m.Name;
+    AB.m.transform = glm::mat4(1.0f);
     AB.join_identical_vertices();
-    B.discard = true;
+    B.m.discard = true;
     A = AB;
 }
 
 mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
 {
     mesh M;
-    M.Name = Mesh->mName.C_Str();
+    M.m.Name = Mesh->mName.C_Str();
 
-    M.vertices.reserve(Mesh->mNumVertices);
-    M.indices.reserve(Mesh->mNumFaces*3);
+    M.m.vertices.reserve(Mesh->mNumVertices);
+    M.m.indices.reserve(Mesh->mNumFaces*3);
 
-    std::thread Tfaces(process_faces, Mesh, &M.indices);
-    std::thread Tverts(process_vertices, Mesh, &M.vertices);
+    std::thread Tfaces(process_faces, Mesh, &M.m.indices);
+    std::thread Tverts(process_vertices, Mesh, &M.m.vertices);
 
-    M.bounding_box.max = cast3D(Mesh->mAABB.mMax);
-    M.bounding_box.min = cast3D(Mesh->mAABB.mMin);
-    M.transforms.push_back(cast4x4(Transform));
-    M.materialIndex = Mesh->mMaterialIndex;
+    M.m.bounding_box.max = cast3D(Mesh->mAABB.mMax);
+    M.m.bounding_box.min = cast3D(Mesh->mAABB.mMin);
+    M.m.transform = cast4x4(Transform);
+    M.m.materialIndex = Mesh->mMaterialIndex;
 
     Tfaces.join();
     Tverts.join();
@@ -114,8 +114,6 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene)
     bool grabbable = false;
     bool mesh_static = true;
     if (Node->mMetaData){
-        //std::cout << "Node " << Node->mName.C_Str() << " metadata:\n";
-        //process_metadata(Node->mMetaData);
         Node->mMetaData->Get<bool>("grabbable", grabbable);
         Node->mMetaData->Get<bool>("static", mesh_static);
     }
@@ -125,8 +123,11 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene)
     {
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
-        Meshes.back().grabbable = grabbable;
-        Meshes.back().static_mesh = mesh_static;
+        if (mesh_static){
+            static_objects.push_back(static_object(index));
+        } else if (grabbable) {
+            dynamic_objects.push_back(dynamic_object(index));
+        }
     }
 
     for (int n = 0; n < Node->mNumChildren; n++)
@@ -139,8 +140,6 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
     bool grabbable = false;
     bool mesh_static = true;
     if (Node->mMetaData){
-        //std::cout << "Node " << Node->mName.C_Str() << " metadata:\n";
-        //process_metadata(Node->mMetaData);
         Node->mMetaData->Get<bool>("grabbable", grabbable);
         Node->mMetaData->Get<bool>("static", mesh_static);
     }
@@ -150,8 +149,11 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
     {
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
-        Meshes.back().grabbable = grabbable;
-        Meshes.back().static_mesh = mesh_static;
+        if (mesh_static){
+            static_objects.push_back(static_object(index));
+        } else if (grabbable) {
+            dynamic_objects.push_back(dynamic_object(index));
+        }
     }
 
     for (int n = 0; n < Node->mNumChildren; n++)
@@ -175,7 +177,7 @@ aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
 void scene::find_instances()
 {
     auto it = Meshes.begin();
-    auto find_inst = [&it](mesh& M){return *it == M && !M.discard;};
+    auto find_inst = [&it](mesh& M){return *it == M && !M.m.discard;};
     for(; it < Meshes.end(); it++)
     {
         auto res = it;
@@ -188,12 +190,9 @@ void scene::find_instances()
 void scene::find_batchable()
 {
     auto it = Meshes.begin();
-    auto find_batch = [&it](mesh& M){return M.nInstances == 1 && it->materialIndex == M.materialIndex && !M.discard;};
+    auto find_batch = [&it](mesh& M){return it->m.materialIndex == M.m.materialIndex && !M.m.discard;};
     for(; it < Meshes.end(); it++)
     {
-        if (it->nInstances > 1)
-            continue;
-        
         auto res = it;
         while((res = std::find_if(it+1, Meshes.end(), find_batch)) != Meshes.end())
         {
@@ -327,15 +326,12 @@ void scene::load_materials(const aiScene* S, const path& pFile)
 
 void scene::clean_meshes()
 {
-    Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](mesh& m){return m.discard;}), Meshes.end());
+    Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](mesh& m){return m.m.discard;}), Meshes.end());
 }
 
 void scene::set_max_instances()
 {
-    for(const auto& M : Meshes)
-    {
-        m.max_instances = std::max(m.max_instances, M.nInstances);
-    }
+    m.max_instances = 1;
 }
 
 scene* scene::import_scene(const path& pFile) 
@@ -357,13 +353,13 @@ scene* scene::import_scene(const path& pFile)
 
     Scene->load_camera(S);
 
+    Scene->Meshes.reserve(S->mRootNode->mNumMeshes);
+
     Scene->process_node(S->mRootNode, S);
 
-    Scene->find_instances();
-
-    Scene->find_batchable();
-
-    Scene->clean_meshes();
+    //Scene->find_instances();
+    //Scene->find_batchable();
+    //Scene->clean_meshes();
 
     Scene->set_max_instances();
 
@@ -409,6 +405,44 @@ void scene::setUBO()
     m.postProcess_buffer.bindBufferBase(4);
 }
 
+void scene::render_static_objects(buffer &Transform_Buffer, size_t transform_offset)
+{
+    for (auto &Obj : static_objects)
+    {
+        auto& M = Meshes[Obj.m.Mesh];
+        if (!M.m.visible)
+            continue;
+        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
+        Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
+        M.render();
+    }
+}
+
+void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_offset)
+{
+    for (auto &Obj : dynamic_objects)
+    {
+        auto& M = Meshes[Obj.m.Mesh];
+        if (!M.m.visible)
+            continue;
+        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
+        if (Obj.m_selected)
+        {
+            glCullFace(GL_FRONT);
+            int glow = 1;
+            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            glm::mat4 T = glm::scale(M.m.transform, glm::vec3(1.1f));
+            Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &T);
+            M.render();
+            glow = 0;
+            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            glCullFace(GL_BACK);
+        }
+        Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
+        M.render();
+    }
+}
+
 void scene::render(buffer &Transform_Buffer, size_t transform_offset)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -416,25 +450,10 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(auto& M : Materials)
         M.bind();
-    for(auto& M : Meshes)
-    {
-        if (!M.nVisibleInstances)
-            continue;
-        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.materialIndex]);
-        if (M.selected && !M.grabbed){
-            glCullFace(GL_FRONT);
-            int glow = 1;
-            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
-            glm::mat4 T = glm::scale(M.transforms[0], glm::vec3(1.1f));
-            Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &T);
-            M.render();
-            glow = 0;
-            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
-            glCullFace(GL_BACK);
-        }
-        Transform_Buffer.bufferSubData(sizeof(glm::mat4)*M.nInstances, transform_offset, M.transforms.data());
-        M.render();
-    }
+
+    render_static_objects(Transform_Buffer, transform_offset);
+    render_dynamic_objects(Transform_Buffer, transform_offset);
+
     m.PostProcRenderer.m.FB.bind();
     m.sProgram.use();
     m.DRenderer.render(m.PostProcRenderer.m.w, m.PostProcRenderer.m.h);

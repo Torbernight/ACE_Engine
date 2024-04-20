@@ -2,9 +2,7 @@
 
 #include <glm/vec4.hpp>
 #include <glm/vec3.hpp>
-#include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
-#include <glm/ext/vector_relational.hpp>
 
 struct AABB
 {
@@ -38,9 +36,15 @@ struct AABB
         bool test_point(const glm::vec3& v)
         {
                 return 
-                glm::all(glm::greaterThanEqual(v, min)) 
-                && 
-                glm::all(glm::lessThanEqual(v, max));
+                v.x >= min.x &&
+                v.y >= min.y &&
+                v.z >= min.z &&
+                v.x <= max.x &&
+                v.y <= max.y &&
+                v.z <= max.z;
+                //glm::all(glm::greaterThanEqual(v, min)) 
+                //&& 
+                //glm::all(glm::lessThanEqual(v, max));
         }
 
         bool test_AABB(const AABB& B)

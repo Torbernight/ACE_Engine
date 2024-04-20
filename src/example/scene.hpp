@@ -13,6 +13,7 @@
 
 #include "camera.hpp"
 #include "mesh.hpp"
+#include "object.hpp"
 #include "material.hpp"
 #include "light.hpp"
 #include "deferred_renderer.hpp"
@@ -46,7 +47,8 @@ class scene
     std::vector<mesh> Meshes;
     std::vector<light> Lights;
     std::vector<Material> Materials;
-    
+    std::vector<static_object>  static_objects;
+    std::vector<dynamic_object> dynamic_objects;
 
     struct postprocess{
         float Brightness = 0.604;
@@ -141,6 +143,8 @@ class scene
         {}
     }m;
 
+    void render_static_objects(buffer &Transform_Buffer, size_t transform_offset);
+    void render_dynamic_objects(buffer &Transform_Buffer, size_t transform_offset);
     static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat);
     void set_max_instances();
     void clean_meshes();

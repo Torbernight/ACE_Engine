@@ -25,6 +25,27 @@ struct plane
         return glm::dot(normal,p) - d;
     }
 
+    float ray_intersection(const glm::vec3& origin, const glm::vec3& dir) const
+    {
+        using namespace glm;
+        float denominator = dot(dir, normal);
+        if (denominator == 0.0f)
+            return (1.0/0.0);
+        
+        return (d - dot(origin, normal)) / denominator;
+    }    
+
+    glm::vec3 nearest_point(const glm::vec3 &P) const
+    {
+        float d = (sdist(P));
+
+        if (d == 0){
+            return P;
+        }
+        return P+normal*glm::sign(d)*ray_intersection(P,normal);
+
+    }
+
     bool testPoint(const glm::vec3 &p) const
     {
         return sdist(p) >= 0;
@@ -44,6 +65,14 @@ struct plane
         glm::vec3 c = box.get_center();
         // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
         return sdist(c)+glm::dot(glm::abs(normal), e) >= 0;
+    }
+
+    bool AABB_intersection(const AABB& box) const 
+    {
+        glm::vec3 e = box.get_extent();
+        glm::vec3 c = box.get_center();
+        // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
+        return std::abs(sdist(c)) <= glm::dot(glm::abs(normal), e);
     }
 
 };

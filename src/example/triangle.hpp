@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AABB.hpp"
 #include "plane.hpp"
 
 struct triangle
@@ -38,7 +39,7 @@ struct triangle
         return PAB.testPoint(X) && PBC.testPoint(X) && PCA.testPoint(X);
     }
 
-    bool test_point(const glm::vec3& X, glm::vec3& normal, float epsilon = 0.01f) const 
+    bool test_point(const glm::vec3& X, glm::vec3& normal, float epsilon = 0.1f) const 
     {
         using namespace glm;
         vec3 AB = B - A;
@@ -55,6 +56,25 @@ struct triangle
         plane PBC = plane(normalize(CA), C);
 
         return PAB.testPoint(X) && PBC.testPoint(X) && PCA.testPoint(X);
+    }
+
+    bool test_AABB(const AABB& box, glm::vec3& normal) const
+    {
+        using namespace glm;
+        vec3 AB = B - A;
+        vec3 BC = C - B;
+        vec3 CA = A - C;
+        plane P = plane(normalize(cross(AB,BC)), A);
+        normal = P.normal;
+
+        if (!P.AABB_intersection(box))
+            return false;
+
+        plane PCA = plane(normalize(AB), A);
+        plane PAB = plane(normalize(BC), B);
+        plane PBC = plane(normalize(CA), C);
+
+        return PAB.isOnOrForwardPlane(box) && PBC.isOnOrForwardPlane(box) && PCA.isOnOrForwardPlane(box);
     }
 
 };

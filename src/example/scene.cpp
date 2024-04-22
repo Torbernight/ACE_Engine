@@ -363,6 +363,22 @@ scene* scene::import_scene(const path& pFile)
 
     Scene->set_max_instances();
 
+    for (static_object &obj: Scene->static_objects)
+    {
+        auto &Mesh = Scene->Meshes[obj.m.Mesh];
+        for(int n = 0; n < Mesh.m.indices.size()/3; n++)
+        {
+            unsigned int A = Mesh.m.indices[n*3];
+            unsigned int B = Mesh.m.indices[n*3+1];
+            unsigned int C = Mesh.m.indices[n*3+2];
+            triangle T;
+            T.A = glm::vec3(Mesh.m.transform * glm::vec4(Mesh.m.vertices[A].position, 1.0f));
+            T.B = glm::vec3(Mesh.m.transform * glm::vec4(Mesh.m.vertices[B].position, 1.0f));
+            T.C = glm::vec3(Mesh.m.transform * glm::vec4(Mesh.m.vertices[C].position, 1.0f));
+            obj.collision_mesh.push_back(T);
+        }
+    }
+
     return Scene;
 }
 

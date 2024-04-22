@@ -76,4 +76,17 @@ struct AABB
 
                 return AABB(c-e, c+e);
         }
+
+        //https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+        // compute the near and far intersections of the cube (stored in the x and y components) using the slab method
+        // no intersection means vec.x > vec.y (really tNear > tFar)
+        glm::vec2 ray_intersection(const glm::vec3& rayOrigin, const glm::vec3& rayDir) {
+                glm::vec3 tMin = (min - rayOrigin) / rayDir;
+                glm::vec3 tMax = (max - rayOrigin) / rayDir;
+                glm::vec3 t1 = glm::min(tMin, tMax);
+                glm::vec3 t2 = glm::max(tMin, tMax);
+                float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
+                float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
+                return glm::vec2(tNear, tFar);
+        };
 };

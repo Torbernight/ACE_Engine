@@ -42,8 +42,10 @@ class MyGame : public application
     MyGame(int win_w, int win_h) : application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
 
     uint64_t frame = 0;
+    uint64_t ticks = 0;
     float runtime = 0.0;
     float dt = 0.0;
+    float fps = 0.0;
 
     Mix_Chunk *footsteps_wave = nullptr;
 
@@ -370,11 +372,12 @@ class MyGame : public application
     {
         if (!showInfo)
             return;
+        
         ImGui::Begin("Info", &showInfo);
         ImGui::Text("Frame: %lu", frame);   
         ImGui::Text("Runtime: %fs", runtime);
-        ImGui::Text("%f ms", dt*1e+3);
-        ImGui::Text("%.2f fps", 1.0/dt);
+        ImGui::Text("%f ms", (1.0/fps)*1e+3);
+        ImGui::Text("%.2f fps", fps);
         ImGui::Text("position: %f %f %f", XYZ(player.m.pos));
         ImGui::Text("speed: %f %f %f", XYZ(player.m.realVel));
         ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
@@ -427,6 +430,47 @@ class MyGame : public application
         M.m.transform[3] = glm::vec4(Pos, 1.0f);
     }
 
+    void test_narrow_collision(const static_object& obj)
+    {
+        using namespace glm;
+        AABB box = player.m.bounding_box;
+        for (const auto &tri : obj.collision_mesh)
+        {
+            vec3 normal;
+            if (tri.test_AABB(box, normal))
+            {
+                if (normal == vec3(0))
+                    continue;
+                
+                bool is_floor = normal.y > 0.1;
+                bool is_wall = !is_floor && std::abs(normal.y) <= 0.1; 
+                if (player.m.jump && is_floor){
+                    continue;
+                }
+                player.m.floor_collision = is_floor;
+                /*
+                vec3 ro = player.m.previousPos-vec3(0,1.7f,0), rd = normalize(player.m.vel);
+                float t = plane(normal, tri.A).ray_intersection(
+                    ro, rd);
+                vec3 c = ro+rd*t+vec3(0,1.7,0);
+                if (any(isinf(c)) || any(isnan(c)))
+                    continue;
+                vec3 p0 = c - player.m.previousPos;
+                vec3 p1 = player.m.pos - c;
+                p1 = reflect(p1, normal);
+                player.m.vel = (p0+p1)/tick_rate;
+                player.m.pos = player.m.previousPos + p0 + p1;
+                */
+                vec3 dir = trunc(normal/maxcomp(normal));
+                player.m.vel *= (1.0f-abs(dir));
+
+                player.m.realVel = (player.m.pos - player.m.previousPos) / tick_rate;
+                player.make_AABB();
+                box = player.m.bounding_box;
+            }
+        }
+    }
+
     void test_player_collision()
     {
         if (glm::length(player.m.realVel) == 0){
@@ -443,12 +487,11 @@ class MyGame : public application
             auto &M = gameScene->Meshes[Obj.m.Mesh];
             const glm::mat4& transform = M.m.transform;
             AABB hitbox = M.m.bounding_box * transform;
-            bool collision = 
-            player.m.bounding_box.test_AABB(hitbox); //maybe vulnerable to race condition?
-            if (collision){
+            if (player.m.bounding_box.test_AABB(hitbox)){
                 mutex.lock();
                 player.m.collision = true;
-                resolve_collision(hitbox);
+                test_narrow_collision(Obj);
+                //resolve_collision(hitbox);
                 mutex.unlock();
                 }
         }
@@ -464,14 +507,15 @@ class MyGame : public application
                 continue;
             auto &M = gameScene->Meshes[Obj.m.Mesh];
             AABB box = M.m.bounding_box * M.m.transform;
-            std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
+            auto begin = gameScene->static_objects.begin();
+            auto end = gameScene->static_objects.end();
+            std::for_each(std::execution::par,begin,end,
             [this, &mutex, &box, &M, &Obj](const static_object& static_obj)
             {
                 auto &Mesh = gameScene->Meshes[static_obj.m.Mesh];
-                const glm::mat4& transform =Mesh.m.transform;
+                const glm::mat4& transform = Mesh.m.transform;
                 AABB hitbox = Mesh.m.bounding_box * transform;
-                bool collision =  box.test_AABB(hitbox);
-                if (collision)
+                if (box.test_AABB(hitbox))
                 {
                     mutex.lock();
                     resolve_collision(box, Obj, hitbox);
@@ -489,23 +533,10 @@ class MyGame : public application
         test_object_collision();
     }
 
-    //https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
-    // compute the near and far intersections of the cube (stored in the x and y components) using the slab method
-    // no intersection means vec.x > vec.y (really tNear > tFar)
-    glm::vec2 intersectAABB(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const AABB& box) {
-        glm::vec3 tMin = (box.min - rayOrigin) / rayDir;
-        glm::vec3 tMax = (box.max - rayOrigin) / rayDir;
-        glm::vec3 t1 = glm::min(tMin, tMax);
-        glm::vec3 t2 = glm::max(tMin, tMax);
-        float tNear = glm::max(glm::max(t1.x, t1.y), t1.z);
-        float tFar = glm::min(glm::min(t2.x, t2.y), t2.z);
-        return glm::vec2(tNear, tFar);
-    };
-
     bool meshIntersects(const mesh& M)
     {
-        glm::vec2 intersection = intersectAABB(player.m.pos, player.m.front, M.m.bounding_box*M.m.transform);
-        return intersection.x <= intersection.y;
+        glm::vec2 intersection = (M.m.bounding_box*M.m.transform).ray_intersection(player.getPos(), player.getFront());
+        return intersection.x <= intersection.y && intersection.x <= 3.0f;
     }
 
     dynamic_object* select_object()
@@ -521,7 +552,7 @@ class MyGame : public application
             bool closest = d < dist;
             //I don't think this works the way I intend it to
             dist = closest ? d : dist;
-            return meshIntersects(M) && closest && d <= 3.0f;
+            return meshIntersects(M) && closest;
         });
         return M == gameScene->dynamic_objects.end() ? nullptr : &(*M);
     }
@@ -533,7 +564,7 @@ class MyGame : public application
 
         test_collision();
 
-        if (player.m.grabbed_object)
+        if (player.has_grabbed_object())
             player.m.grabbed_object->update_grabbed(&player, gameScene);
 
     }
@@ -629,35 +660,29 @@ class MyGame : public application
     {
         static float accumulated = 0.0f;
         accumulated += dt;
-        glm::mat4 lastFrame_Transform = get_camera_transform();
 
         while (accumulated >= tick_rate)
         {
-            lastFrame_Transform = get_camera_transform();
-            player.m.delta_rotation = glm::vec2(0.0f);
+            player.reset_rotation();
             process_events();
-            if (escape){
-                accumulated -= tick_rate;
-                continue;
-            }
+            
+            if (escape)
+                goto skip_loop;
+            
             check_selectable_object();
             player.move(tick_rate);
-            if (player.should_sound_footstep() && !Mix_Playing(0)){
-                Mix_PlayChannel(0, footsteps_wave, 0);
-            }
             player.rotate(tick_rate);
             update_physics();
+            if (player.should_sound_footstep() && !Mix_Playing(0))
+                Mix_PlayChannel(0, footsteps_wave, 0);
+
+skip_loop:
             accumulated -= tick_rate;
+            ticks++;
+            if (!(ticks%20))
+                fps = 1.0/dt;
         }
-        
-        //float factor = accumulated/tick_rate;
-        //for (auto& M : gameScene->dynamic_objects) {
-        //    M.m.transform = interpolate_transform(M.m.lastFrame_Transform, M.m.transform, factor);
-        //}
-        //glm::mat4 current_Transform = get_camera_transform();
-        //glm::mat4 interpolated_transform = interpolate_transform(lastFrame_Transform, current_Transform, factor);
-        //set_camera_transform(interpolated_transform);
-        
+
         player.makeView();
         check_on_frustum();
         //order_objects();
@@ -690,9 +715,8 @@ class MyGame : public application
 
             update_gameLogic();
 
-            if(escape) {
+            if(escape)
                 show_config();
-            }
 
             info_window();
             

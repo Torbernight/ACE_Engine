@@ -1,6 +1,7 @@
 #pragma once
-
+#include <vector>
 #include "mesh.hpp"
+#include "triangle.hpp"
 
 class object
 {
@@ -79,6 +80,8 @@ class static_object : public object
     {
         return;
     }
+    std::vector<triangle> collision_mesh;
+    
 };
 
 class dynamic_object : public object

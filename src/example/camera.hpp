@@ -32,6 +32,10 @@ class camera
 
     void rotate(float dt);
 
+    void reset_rotation() {
+        m.delta_rotation = glm::vec2(0);
+    }
+
     void set_update(bool update)
     {
         m.update = update;
@@ -108,6 +112,11 @@ class camera
     bool should_sound_footstep() const
     {
         return m.jump || (m.moving && std::abs(footstep_offset()+m.footstep_amp) <= 0.001);
+    }
+
+    bool has_grabbed_object() const
+    {
+        return m.grabbed_object != nullptr;
     }
 
     struct members{

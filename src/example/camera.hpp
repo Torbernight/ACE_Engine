@@ -101,7 +101,14 @@ class camera
 
     void make_AABB();
 
+    float footstep_offset() const;
+
     glm::mat4 get_transform() const;
+
+    bool should_sound_footstep() const
+    {
+        return m.jump || (m.moving && std::abs(footstep_offset()+m.footstep_amp) <= 0.001);
+    }
 
     struct members{
         glm::vec3 front = glm::vec3(0.0,0.0,-1.0);
@@ -125,6 +132,13 @@ class camera
         frustum view_frustum;
         AABB bounding_box;
         bool collision = false;
+        bool floor_collision = false;
+        bool on_floor_last_frame = false;
+        float footstep_timer = 0.0f;
+        float footstep_amp = 0.0f;
+        float footstep_freq = 3.0f;
+        bool moving = false;
+        bool jump = false;
 
         dynamic_object* grabbed_object = nullptr;
         dynamic_object* pointed_object = nullptr;

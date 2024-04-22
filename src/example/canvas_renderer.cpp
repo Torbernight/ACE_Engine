@@ -1,19 +1,25 @@
 #include <GL/glew.h>
-#include "deferred_renderer.hpp"
+#include "canvas_renderer.hpp"
 
-void deferred_renderer::bind()
+void canvas_renderer::bind()
 {
         m.FB.bind();
         m.sProgram.use();
 }
 
-void deferred_renderer::unbind()
+void canvas_renderer::bind(shaderProgram &S)
+{
+        m.FB.bind();
+        S.use();
+}
+
+void canvas_renderer::unbind()
 {
         m.FB.unbind();
         m.sProgram.unuse();
 }
 
-void deferred_renderer::render()
+void canvas_renderer::render()
 {
         m.FB.bindTextures();
         glDisable(GL_DEPTH_TEST);
@@ -24,19 +30,13 @@ void deferred_renderer::render()
         glEnable(GL_DEPTH_TEST);
 }
 
-void deferred_renderer::render(int w, int h)
+void canvas_renderer::set_viewport()
 {
-        glViewport(0,0,w,h);
-        m.FB.bindTextures();
-        glDisable(GL_DEPTH_TEST);
-        glClear(GL_COLOR_BUFFER_BIT);
-        m.VAO.bind();
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        m.VAO.unbind();
-        glEnable(GL_DEPTH_TEST);
+        glViewport(0,0,m.w,m.h);
 }
 
-void deferred_renderer::initVAO()
+
+void canvas_renderer::initVAO()
 {
         const float vertices[24] = 
         {
@@ -57,7 +57,7 @@ void deferred_renderer::initVAO()
         m.VAO.unbind();
 }
 
-void deferred_renderer::initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h)
+void canvas_renderer::initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h)
 {
         m.vShader.loadBinary(vShader);
         m.fShader.loadBinary(fShader);
@@ -74,7 +74,7 @@ void deferred_renderer::initPostProc(const std::filesystem::path& vShader, const
         });
 }
 
-void deferred_renderer::initFBO(int w, int h, std::initializer_list<texture::texture_parameters>&& Attachments)
+void canvas_renderer::initFBO(int w, int h, std::initializer_list<texture::texture_parameters>&& Attachments)
 {
         m.w = w;
         m.h = h;
@@ -92,7 +92,7 @@ void deferred_renderer::initFBO(int w, int h, std::initializer_list<texture::tex
        
 }
 
-void deferred_renderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h)
+void canvas_renderer::initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h)
 {
         m.vShader.loadBinary(vShader);
         m.fShader.loadBinary(fShader);

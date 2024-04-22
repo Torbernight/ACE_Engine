@@ -29,7 +29,7 @@ window::~window()
 
 int window::m_init()
 {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     m.SDL_Win = SDL_CreateWindow(m.title.c_str(), m.posx, m.posy, m.width, m.height, SDL_WINDOW_OPENGL | m.flags);
     m.GL_Context = SDL_GL_CreateContext(m.SDL_Win);
     return 0;

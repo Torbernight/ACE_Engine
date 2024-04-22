@@ -15,6 +15,7 @@ layout(binding=2) uniform sampler2D uPosition;
 layout(binding=3) uniform sampler2D uAO_Rough_Metal;
 layout(binding=4) uniform sampler2D uEmissive;
 layout(binding=5) uniform sampler2D uDepth;
+layout(binding=6) uniform samplerCube uSkybox;
 
 float LinearizeDepth(float depth) 
 {
@@ -59,7 +60,15 @@ void main()
     float AO = ARM.x;
     float roughness = ARM.y;
     float metallic = 1.0 - ARM.z;
-    
+
+    if (any(isinf(position))){
+        oColor = vec4(1.1*emissive, 1.0);
+        return;
+    }
+
+    vec3 V = normalize(position - u_CamPos.xyz);
+    vec3 H = normalize(V + normal);
+
     vec3 color = vec3(0.0);
     for(int i = 0; i < nLights; i++)
     {
@@ -84,12 +93,13 @@ void main()
                 color += AO*compute_ambientLight(L);
                 break;
         }
-        vec3 V = normalize(position - u_CamPos.xyz);
-        vec3 H = normalize(V + normal);
         color += BRDF(H, V, normal, Ldir, roughness, metallic, albedo, radiance);
     }
-    oColor = vec4(emissive + color, 1.0);
+    vec3 reflected = reflect(V, H);
+    //vec3 ambient = BRDF(H, V, normal, reflected, roughness, metallic, albedo, AO*6*texture(uSkybox, reflected).rgb);
+    vec3 ambient = albedo*AO*texture(uSkybox, reflected).rgb*(0.5+0.5*dot(normal,vec3(0,1,0)));
+    oColor = vec4(emissive + ambient + color, 1.0);
     float cd = 0.025*LinearizeDepth(texture(uDepth, iTexCoords).r);
     float fog = exp2(-cd*cd);
-    oColor.rgb = mix(vec3(0), oColor.rgb, fog);
+    oColor.rgb = mix(texture(uSkybox, V).rgb, oColor.rgb, fog);
 }

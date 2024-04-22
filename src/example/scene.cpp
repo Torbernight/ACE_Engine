@@ -452,34 +452,50 @@ void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_of
     }
 }
 
-void scene::render(buffer &Transform_Buffer, size_t transform_offset)
+void scene::render_postprocess()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    m.DRenderer.bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    framebuffer::unbind();
+    m.PostProcRenderer.use_shader();
+    m.DRenderer.set_viewport();
+    m.PostProcRenderer.render();
+}
+
+void scene::render_deferred()
+{
+    m.PostProcRenderer.bind_framebuffer();
+    m.sProgram.use();
+    m.PostProcRenderer.set_viewport();
+    m.DRenderer.render();
+}
+
+void scene::bind_materials()
+{
     for(auto& M : Materials)
         M.bind();
+}
 
-    //for (auto Index : Mesh_indices)
-    //{
-    //    auto& M = Meshes[Index];
-    //    if (!M.m.visible)
-    //        continue;
-    //    m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
-    //    Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
-    //    M.render();
-    //}
+void scene::render_skybox()
+{
+    m.skybox.use_shader();
+    m.skybox.bind_texture();
+    m.skybox.render();
+}
 
+void scene::render(buffer &Transform_Buffer, size_t transform_offset)
+{
+    m.DRenderer.bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    bind_materials();
     render_static_objects(Transform_Buffer, transform_offset);
     render_dynamic_objects(Transform_Buffer, transform_offset);
+    render_skybox();
+    render_deferred();
+    render_postprocess();
+}
 
-    m.PostProcRenderer.m.FB.bind();
-    m.sProgram.use();
-    m.DRenderer.render(m.PostProcRenderer.m.w, m.PostProcRenderer.m.h);
-    m.PostProcRenderer.m.FB.unbind();
-    m.PostProcRenderer.m.sProgram.use();
-    m.PostProcRenderer.render(m.DRenderer.m.w, m.DRenderer.m.h);
-    m.PostProcRenderer.m.sProgram.unuse();
+void scene::initSkybox(const path& vertex, const path& fragment)
+{
+    m.skybox.init(vertex, fragment, 512, 512);
 }
 
 void scene::initMeshes()
@@ -490,7 +506,6 @@ void scene::initMeshes()
 
 void scene::initDRenderer(int w, int h)
 {
-    m.DRenderer.m.vShader.add_specialization_const(m.max_instances, 0);    
-    m.DRenderer.init(m.scene_vShader, m.scene_fShader, Materials.size(), w, h);
-    m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w/2,h/2);
+    m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, Materials.size(), w, h);
+    m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w,h);
 }

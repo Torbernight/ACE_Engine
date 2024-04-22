@@ -76,6 +76,12 @@ void texture::genTexImage(const void* pixels)
         }
 }
 
+void texture::genTexImage_cubemap(int side, const void* pixels)
+{
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, 0, m.internal_format, m.width, m.height, 0, m.format, m.type, pixels);
+}
+
+
 void texture::setTexParameter(unsigned int parameter, int value)
 {
         glTexParameteri(m.target, parameter, value);

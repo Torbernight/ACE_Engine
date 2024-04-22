@@ -57,8 +57,10 @@ class texture
         void setTexParameter(unsigned int parameter, float value);
         void setTexParameter(unsigned int parameter, const float *value);
         void setTexParameter(unsigned int parameter, const int *value);
-
+        
         void genTexImage(const void* pixels);
+        
+        void genTexImage_cubemap(int side, const void* pixels);
 
         unsigned int get_TexObject() const {return m.texture;}
         unsigned int get_Target() const {return m.target;}

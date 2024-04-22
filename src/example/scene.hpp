@@ -16,7 +16,8 @@
 #include "object.hpp"
 #include "material.hpp"
 #include "light.hpp"
-#include "deferred_renderer.hpp"
+#include "canvas_renderer.hpp"
+#include "cubemap_renderer.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h> 
@@ -58,6 +59,7 @@ class scene
         float Saturation = 0.686;
         float Gamma = 2.2;
         float Exposure = 271.7570653294113;
+        //float Exposure = 271.7570653294113;
     } postprocess;
 
     static scene* import_scene(const path& pFile);
@@ -78,20 +80,22 @@ class scene
     void initMeshes();
     void initDRenderer(int w, int h);
 
+    void initSkybox(const path& vertex, const path& fragment);
+
     void resizeViewport(int w, int h)
     {
         m.DRenderer.resize(w,h);
-        m.PostProcRenderer.resize(w/2,h/2);
+        m.PostProcRenderer.resize(w,h);
     }
 
     void updatePostProcessBuffer();
 
     void render(buffer& Transform_Buffer, size_t transform_offset);
 
-    deferred_renderer& get_DRenderer() {
+    canvas_renderer& get_DRenderer() {
         return m.DRenderer;
     }
-    deferred_renderer& get_postProcRenderer() {
+    canvas_renderer& get_postProcRenderer() {
         return m.PostProcRenderer;
     }
 
@@ -117,8 +121,9 @@ class scene
         buffer UBO;
         buffer mBuffer;
         buffer postProcess_buffer;
-        deferred_renderer DRenderer;
-        deferred_renderer PostProcRenderer;
+        canvas_renderer DRenderer;
+        canvas_renderer PostProcRenderer;
+        cubemap_renderer skybox;
         std::vector<unsigned int> init_constants;
         std::vector<material_buffer> Materials;
         Shader vShader;
@@ -145,6 +150,10 @@ class scene
         {}
     }m;
 
+    void render_skybox();
+    void bind_materials();
+    void render_postprocess();
+    void render_deferred();
     void render_static_objects(buffer &Transform_Buffer, size_t transform_offset);
     void render_dynamic_objects(buffer &Transform_Buffer, size_t transform_offset);
     static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat);

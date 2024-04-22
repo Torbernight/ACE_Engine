@@ -1,5 +1,6 @@
 #include <iostream>
 #include <SDL.h>
+#include <SDL_mixer.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <algorithm>
@@ -9,7 +10,6 @@
 #include "../application.hpp"
 #include "../vertexArray.hpp"
 #include "../buffer.hpp"
-#include "../obj_importer.hpp"
 
 #include "imgui_include.hpp"
 #include "timer.hpp"
@@ -44,6 +44,8 @@ class MyGame : public application
     uint64_t frame = 0;
     float runtime = 0.0;
     float dt = 0.0;
+
+    Mix_Chunk *footsteps_wave = nullptr;
 
     camera player;
     scene *gameScene = nullptr;
@@ -80,20 +82,33 @@ class MyGame : public application
         glEnable(GL_PRIMITIVE_RESTART);
         glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glEnable(GL_BLEND);
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     void init()
     {
+        if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 2048) < 0) {
+            SDL_Log("Couldn't open audio: %s\n", SDL_GetError());
+            win.set_shouldClose(true);
+            return;
+        }
+        footsteps_wave = Mix_LoadWAV("assets/sound/silly_footstep.wav");
+        if (!footsteps_wave) {
+            SDL_Log("Couldn't load 'assets/sound/silly_footstep.wav': %s\n", SDL_GetError());
+            win.set_shouldClose(true);
+            return;
+        }
+        
         SDL_SetRelativeMouseMode(SDL_TRUE);
         SDL_GL_SetSwapInterval(0);
         init_gl_parameters();
         init_imgui();
 
-        gameScene = scene::import_scene("assets/test.gltf");
+        gameScene = scene::import_scene("assets/garden.gltf");
         if (!gameScene){
             win.set_shouldClose(true);
             return;
@@ -101,6 +116,7 @@ class MyGame : public application
         gameScene->load_SceneShader("shader/scene.vert.spv", "shader/scene.frag.spv");
         gameScene->load_DeferredShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
         gameScene->load_PostProcShader("shader/deferred.vert.spv", "shader/postprocess.frag.spv");
+        gameScene->initSkybox("shader/skybox.vert.spv", "shader/skybox.frag.spv");
         gameScene->setUBO();
         gameScene->initMeshes();
         gameScene->initDRenderer(win.getWidth(), win.getHeight());
@@ -236,7 +252,7 @@ class MyGame : public application
         postProc_Update |= ImGui::DragFloat("Contrast", &gameScene->postprocess.Contrast, 0.025, 0.0, 2.0);
         postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
         postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
-        postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, FLT_MIN, 1.0e+5);
+        postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, -5.0, 5.0);
 
         uint8_t camera_update = 0;
         ImGui::SeparatorText("Camera options");
@@ -363,6 +379,9 @@ class MyGame : public application
         ImGui::Text("speed: %f %f %f", XYZ(player.m.realVel));
         ImGui::Text("angle: %f %f", XY(glm::degrees(player.m.rotation)));
         ImGui::Text("delta angle: %f %f", XY(glm::degrees(player.m.delta_rotation)));
+        ImGui::Text("on floor: %s",player.m.floor_collision ? "true" : "false");
+        ImGui::Text("footstep timer: %f",player.m.footstep_timer);
+        ImGui::Text("footstep amp: %f",player.m.footstep_amp);
         ImGui::Text("collision: %s",player.m.collision ? "true" : "false");
         ImGui::End();
     }
@@ -385,6 +404,7 @@ class MyGame : public application
         glm::vec3 dir = (player.m.bounding_box.get_center() - hitbox.get_center()) / hitbox.get_extent();
         clampnan(dir);
         dir = glm::trunc(dir/maxcomp(dir));
+        player.m.floor_collision = dir.y == 1.0;
         //player.m.vel = glm::reflect(player.m.vel, dir);
         player.m.vel *= (1.0f-glm::abs(dir));
         player.m.pos = player.m.previousPos + player.m.vel * tick_rate;
@@ -414,6 +434,8 @@ class MyGame : public application
         }
         std::mutex mutex;
         player.m.collision = false;
+        player.m.on_floor_last_frame = player.m.floor_collision;
+        player.m.floor_collision = false;
         //TODO space partitioning
         std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
         [this, &mutex](const static_object& Obj)
@@ -620,6 +642,9 @@ class MyGame : public application
             }
             check_selectable_object();
             player.move(tick_rate);
+            if (player.should_sound_footstep() && !Mix_Playing(0)){
+                Mix_PlayChannel(0, footsteps_wave, 0);
+            }
             player.rotate(tick_rate);
             update_physics();
             accumulated -= tick_rate;

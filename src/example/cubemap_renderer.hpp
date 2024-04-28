@@ -24,7 +24,7 @@ class cubemap_renderer
             return m.h;
     }
 
-    void init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, int cubemap_binding = 6);
+    void init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, const std::filesystem::path& skybox, int cubemap_binding = 6);
     void render();
 
     void bind_texture()

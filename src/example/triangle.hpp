@@ -61,20 +61,33 @@ struct triangle
     bool test_AABB(const AABB& box, glm::vec3& normal) const
     {
         using namespace glm;
-        vec3 AB = B - A;
-        vec3 BC = C - B;
-        vec3 CA = A - C;
+
+        vec3 AB = normalize(B - A);
+        vec3 BC = normalize(C - B);
+        vec3 CA = normalize(A - C);
+
         plane P = plane(normalize(cross(AB,BC)), A);
         normal = P.normal;
 
-        if (!P.AABB_intersection(box))
+        vec3 c = box.get_center();
+        vec3 e = box.get_extent();
+
+        if (!P.AABB_intersection(e, c))
             return false;
 
-        plane PCA = plane(normalize(AB), A);
-        plane PAB = plane(normalize(BC), B);
-        plane PBC = plane(normalize(CA), C);
+        plane PCA = plane(AB, A);
+        plane PAB = plane(BC, B);
+        plane PBC = plane(CA, C);
 
-        return PAB.isOnOrForwardPlane(box) && PBC.isOnOrForwardPlane(box) && PCA.isOnOrForwardPlane(box);
+        return 
+        PAB.isOnOrForwardPlane(e, c) && 
+        PBC.isOnOrForwardPlane(e, c) && 
+        PCA.isOnOrForwardPlane(e, c);
+    }
+
+    glm::vec3 get_Baricenter() const
+    {
+        return (A+B+C)/3.0f;
     }
 
 };

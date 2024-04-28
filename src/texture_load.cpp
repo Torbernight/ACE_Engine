@@ -86,3 +86,39 @@ image_data process_image_data(const image_data& data)
     }
     return D;
 }
+
+imageArray_data load_image_array(const std::filesystem::path& P)
+{
+    fipMultiPage image;
+        
+    if (!image.open(P.c_str(), false, false, 0))
+    {
+        std::cerr << "ERROR: couldn't load image at " << P << "\n";
+        SDL_assert(false);
+        return {};
+    }
+    imageArray_data data;
+    data.layers = image.getPageCount();
+    data.data = new image_data[data.layers];
+
+    for (int n = 0; n < data.layers; n++){
+        fipImage layer;
+        layer = image.lockPage(n);
+        if(!layer.isValid()){
+            std::cerr << "ERROR loading layer " << n << "\n";
+            return {};
+        }
+        image_data &D = data.data[n];
+        D.width = layer.getWidth();
+        D.height = layer.getHeight();
+        D.data_len = layer.getHeight()*layer.getScanWidth();
+        D.data = new char[D.data_len];
+        memcpy(D.data, layer.accessPixels(), D.data_len);
+        D.type = layer.getImageType();
+        D.format = layer.getBitsPerPixel();
+        D = process_image_data(D);
+        image.unlockPage(layer, false);
+    }
+
+    return data;
+}

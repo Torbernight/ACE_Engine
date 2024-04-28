@@ -21,6 +21,7 @@ float camera::footstep_offset() const
 
 void camera::move(float dt)
 {
+    using namespace glm;
 
     m.acc = 
     (float)(movement.forward-movement.backward)*move2D(m.front)
@@ -33,7 +34,7 @@ void camera::move(float dt)
 
     m.jump = m.acc.y > 0;
 
-    m.moving = m.acc != glm::vec3(0.0);
+    m.moving = m.acc != vec3(0.0);
 
     if(!m.floor_collision || !m.moving){
         constexpr float epsilon = 1.0e-6f;
@@ -45,35 +46,37 @@ void camera::move(float dt)
         }
     } else {
         m.footstep_timer += dt;
-        m.footstep_amp = glm::smoothstep(0.0f, 0.2f, m.footstep_timer)*0.05;
+        m.footstep_amp = smoothstep(0.0f, 0.2f, m.footstep_timer)*0.05;
     }
 
-    if (glm::dot(m.acc,m.acc) == 0){
+    if (dot(m.acc,m.acc) == 0){
         if (m.floor_collision){
             m.vel *= 0.1f;
             return;
         }
     } else {
-        m.acc = glm::normalize(m.acc) * 1000.0f;
+        m.acc = normalize(m.acc) * vec3(1000.0f, 200.0f, 1000.0f);
         m.vel.x = m.acc.x == 0 ? 0.0f : m.vel.x;
         m.vel.z = m.acc.z == 0 ? 0.0f : m.vel.z;
         if (!m.collision){
-            m.acc = glm::vec3(0.0f);
+            m.acc = vec3(0.0f);
         }
     }
+    m.acc.y -= 9.8;
+
     m.vel += m.acc*dt;
-    float speed = glm::length(m.vel);
-    float speedcap = glm::mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
+    float speed = length(vec2(m.vel.x, m.vel.z));
+    float speedcap = mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
     m.footstep_freq = speedcap;
 
     if (speed > speedcap){
-        m.vel = glm::normalize(m.vel)*speedcap;
+        vec2 V = normalize(vec2(m.vel.x, m.vel.z))*speedcap;
+        m.vel = vec3(V.x, m.vel.y, V.y);
     }
-    m.vel += glm::vec3(0.0, -9.8f*dt, 0.0);
     m.previousPos = m.pos;
+
     m.pos += m.vel*dt;
     m.realVel = (m.pos - m.previousPos) / dt;
-
     make_AABB();
 }
 

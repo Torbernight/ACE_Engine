@@ -66,7 +66,7 @@ void cubemap_renderer::initVAO()
 
 //#define GL_TEXTURE_CUBE_MAP_POSITIVE_X 0x8515
 
-void cubemap_renderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, int cubemap_binding)
+void cubemap_renderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, const std::filesystem::path& skybox, int cubemap_binding)
 {
     m.vShader.loadBinary(vShader);
     m.fShader.loadBinary(fShader);
@@ -78,8 +78,7 @@ void cubemap_renderer::init(const std::filesystem::path& vShader, const std::fil
     m.sProgram.linkProgram();
 
     initVAO();
-
-    image_data faces[6];
+/*
     const char* filenames[6] = {
         "ps_right.png",
         "ps_left.png",
@@ -88,28 +87,29 @@ void cubemap_renderer::init(const std::filesystem::path& vShader, const std::fil
         "ps_back.png",
         "ps_front.png"
     };
+*/
+    imageArray_data array_data = load_image_array("assets/textures/skybox/" / skybox);
 
     m.cubemap.generate();
 
     for(int n = 0; n < 6; n++)
     {
-        faces[n] = process_image_data(load_image(std::filesystem::path("assets/textures/skybox") / filenames[n]));
-
         if (0 == n)
         {
             m.cubemap.setWidth(w);
             m.cubemap.setHeight(h);
             m.cubemap.setSlot(cubemap_binding);
             m.cubemap.setTarget(GL_TEXTURE_CUBE_MAP);
-            m.cubemap.setType(faces[0].type);
-            m.cubemap.setFormat(faces[0].format, faces[0].internal_format);
+            m.cubemap.setType(array_data.data[n].type);
+            m.cubemap.setFormat(array_data.data[n].format, array_data.data[n].internal_format);
             m.cubemap.bind();
         }
 
-        m.cubemap.genTexImage_cubemap(n, faces[n].data);
+        m.cubemap.genTexImage_cubemap(n, array_data.data[n].data);
 
-        delete[] faces[n].data;
+        delete[] array_data.data[n].data;
     }
+    delete[] array_data.data;
 
     m.cubemap.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     m.cubemap.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);

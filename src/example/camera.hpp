@@ -28,7 +28,7 @@ class camera
     } movement;
 
 
-    void move(float dt);
+    virtual void move(float dt);
 
     void rotate(float dt);
 
@@ -157,7 +157,7 @@ class camera
 
     } m;
 
-    private:
+    protected:
 
     inline static float s_walk_speed = 3.0f;
     inline static float s_sprint_speed = 6.0f;

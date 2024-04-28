@@ -18,6 +18,7 @@
 #include "debug.hpp"
 #include "scene.hpp"
 #include "extensions.hpp"
+#include "physics.hpp"
 
 struct state_UBO
 {
@@ -26,7 +27,6 @@ struct state_UBO
     float delta;
     glm::vec2 resolution;
 };
-
 struct camera_UBO
 {
     glm::vec4 pos;
@@ -118,7 +118,7 @@ class MyGame : public application
         gameScene->load_SceneShader("shader/scene.vert.spv", "shader/scene.frag.spv");
         gameScene->load_DeferredShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
         gameScene->load_PostProcShader("shader/deferred.vert.spv", "shader/postprocess.frag.spv");
-        gameScene->initSkybox("shader/skybox.vert.spv", "shader/skybox.frag.spv");
+        gameScene->initSkybox("shader/skybox.vert.spv", "shader/skybox.frag.spv", "ps.tif");
         gameScene->setUBO();
         gameScene->initMeshes();
         gameScene->initDRenderer(win.getWidth(), win.getHeight());
@@ -391,146 +391,12 @@ class MyGame : public application
 #undef XYZ
 #undef XY
 
-    inline static 
-    float maxcomp(const glm::vec3& V){
-        return glm::max(abs(V.x), glm::max(abs(V.y),abs(V.z)));
-    }
-    inline static
-    void clampnan(glm::vec3 &V){
-        V.x = isnan(V.x) ? 0.0 : isinf(V.x) ? glm::sign(V.x) : V.x;
-        V.y = isnan(V.y) ? 0.0 : isinf(V.y) ? glm::sign(V.y) : V.y;
-        V.z = isnan(V.z) ? 0.0 : isinf(V.z) ? glm::sign(V.z) : V.z;
-    }
 
-    void resolve_collision(const AABB& hitbox)
-    {
-        glm::vec3 dir = (player.m.bounding_box.get_center() - hitbox.get_center()) / hitbox.get_extent();
-        clampnan(dir);
-        dir = glm::trunc(dir/maxcomp(dir));
-        player.m.floor_collision = dir.y == 1.0;
-        //player.m.vel = glm::reflect(player.m.vel, dir);
-        player.m.vel *= (1.0f-glm::abs(dir));
-        player.m.pos = player.m.previousPos + player.m.vel * tick_rate;
-        //SDL_assert(!glm::any(glm::isnan(player.m.pos)));
-        player.m.realVel = (player.m.pos - player.m.previousPos) / tick_rate;
-        player.make_AABB();
-    }
-
-    void resolve_collision(const AABB& box, dynamic_object& Obj, const AABB& hitbox)
-    {
-        auto &M = gameScene->Meshes[Obj.m.Mesh];
-        glm::vec3 dir = (box.get_center() - hitbox.get_center()) / hitbox.get_extent();
-        clampnan(dir);
-        dir = glm::trunc(dir/maxcomp(dir));
-        glm::vec3 Pos = glm::vec3(M.m.transform[3]);
-        glm::vec3 previousPos = Pos - Obj.vel*tick_rate;
-        Obj.vel *= (1.0f-glm::abs(dir));
-        Pos = previousPos + Obj.vel * tick_rate;
-        //SDL_assert(!glm::any(glm::isnan(Pos)) && !glm::any(glm::isinf(Pos)));
-        M.m.transform[3] = glm::vec4(Pos, 1.0f);
-    }
-
-    void test_narrow_collision(const static_object& obj)
-    {
-        using namespace glm;
-        AABB box = player.m.bounding_box;
-        for (const auto &tri : obj.collision_mesh)
-        {
-            vec3 normal;
-            if (tri.test_AABB(box, normal))
-            {
-                if (normal == vec3(0))
-                    continue;
-                
-                bool is_floor = normal.y > 0.1;
-                bool is_wall = !is_floor && std::abs(normal.y) <= 0.1; 
-                if (player.m.jump && is_floor){
-                    continue;
-                }
-                player.m.floor_collision = is_floor;
-                /*
-                vec3 ro = player.m.previousPos-vec3(0,1.7f,0), rd = normalize(player.m.vel);
-                float t = plane(normal, tri.A).ray_intersection(
-                    ro, rd);
-                vec3 c = ro+rd*t+vec3(0,1.7,0);
-                if (any(isinf(c)) || any(isnan(c)))
-                    continue;
-                vec3 p0 = c - player.m.previousPos;
-                vec3 p1 = player.m.pos - c;
-                p1 = reflect(p1, normal);
-                player.m.vel = (p0+p1)/tick_rate;
-                player.m.pos = player.m.previousPos + p0 + p1;
-                */
-                vec3 dir = trunc(normal/maxcomp(normal));
-                player.m.vel *= (1.0f-abs(dir));
-
-                player.m.realVel = (player.m.pos - player.m.previousPos) / tick_rate;
-                player.make_AABB();
-                box = player.m.bounding_box;
-            }
-        }
-    }
-
-    void test_player_collision()
-    {
-        if (glm::length(player.m.realVel) == 0){
-            return;
-        }
-        std::mutex mutex;
-        player.m.collision = false;
-        player.m.on_floor_last_frame = player.m.floor_collision;
-        player.m.floor_collision = false;
-        //TODO space partitioning
-        std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
-        [this, &mutex](const static_object& Obj)
-        {
-            auto &M = gameScene->Meshes[Obj.m.Mesh];
-            const glm::mat4& transform = M.m.transform;
-            AABB hitbox = M.m.bounding_box * transform;
-            if (player.m.bounding_box.test_AABB(hitbox)){
-                mutex.lock();
-                player.m.collision = true;
-                test_narrow_collision(Obj);
-                //resolve_collision(hitbox);
-                mutex.unlock();
-                }
-        }
-        );
-    }
-
-    void test_object_collision()
-    {
-        std::mutex mutex;
-        for (auto &Obj : gameScene->dynamic_objects)
-        {
-            if (Obj.m_grabbed)
-                continue;
-            auto &M = gameScene->Meshes[Obj.m.Mesh];
-            AABB box = M.m.bounding_box * M.m.transform;
-            auto begin = gameScene->static_objects.begin();
-            auto end = gameScene->static_objects.end();
-            std::for_each(std::execution::par,begin,end,
-            [this, &mutex, &box, &M, &Obj](const static_object& static_obj)
-            {
-                auto &Mesh = gameScene->Meshes[static_obj.m.Mesh];
-                const glm::mat4& transform = Mesh.m.transform;
-                AABB hitbox = Mesh.m.bounding_box * transform;
-                if (box.test_AABB(hitbox))
-                {
-                    mutex.lock();
-                    resolve_collision(box, Obj, hitbox);
-                    box = M.m.bounding_box * M.m.transform;
-                    mutex.unlock();
-                }
-            }
-        );
-        }
-    }
 
     void test_collision()
     {
-        test_player_collision();
-        test_object_collision();
+        test_player_collision(player, gameScene, tick_rate);
+        test_object_collision(gameScene, tick_rate);
     }
 
     bool meshIntersects(const mesh& M)
@@ -585,8 +451,7 @@ class MyGame : public application
     void use_object()
     {
         dynamic_object* grabbed = player.m.grabbed_object; 
-        if (!grabbed)
-        {
+        if (!grabbed){
             if ((grabbed = player.m.pointed_object)){
                 grabbed->grab(&player);
             }
@@ -607,55 +472,6 @@ class MyGame : public application
         std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(), [this](mesh& M){M.onFrustum(player.m.view_frustum);});
     }
 
-    glm::mat4 interpolate_transform(const glm::mat4& V0, const glm::mat4& V1, float fac)
-    {
-        glm::quat R0 = glm::mat3(V0), R1 = glm::mat3(V1);
-        glm::quat R = glm::slerp(R0, R1, fac);
-        glm::vec4 P = glm::mix(V0[3], V1[3], fac);
-        glm::mat4 V(R);
-        V[3] = P;
-        return V;
-    }
-
-    glm::mat4 get_camera_transform()
-    {
-        return 
-        glm::mat4(
-            player.m.right.x, player.m.right.y, player.m.right.z, 0.0f,
-            player.m.up.x, player.m.up.y, player.m.up.z, 0.0f,
-            -player.m.front.x, -player.m.front.y, -player.m.front.z, 0.0f,
-            player.m.pos.x, player.m.pos.y, player.m.pos.z, 1.0f
-        );
-    }
-
-    void set_camera_transform(const glm::mat4& T)
-    {
-        player.m.right = glm::mat3(T) * glm::vec3(1.0,0.0,0.0);
-        player.m.up = glm::mat3(T) * glm::vec3(0.0,1.0,0.0);
-        player.m.front = glm::mat3(T) * glm::vec3(0.0,0.0,-1.0);
-        player.m.pos = glm::vec3(T[3]);
-    }
-
-    void order_objects()
-    {
-        auto &indices = gameScene->Mesh_indices;
-        auto &meshes = gameScene->Meshes;
-        indices.clear();
-
-        for(auto it = meshes.begin(); it != meshes.end(); it++){
-            if (!it->m.visible)
-                continue;
-            indices.push_back(it - meshes.begin());
-        }
-
-        std::sort(indices.begin(), indices.end(), 
-        [&meshes, this](unsigned int A, unsigned int B){
-            glm::vec3 P0 = (meshes[A].m.bounding_box*meshes[A].m.transform).get_center();
-            glm::vec3 P1 = (meshes[B].m.bounding_box*meshes[A].m.transform).get_center();
-            return glm::distance(P0, player.m.pos) <= glm::distance(P1, player.m.pos);
-        });
-    }
-
     void update_gameLogic()
     {
         static float accumulated = 0.0f;
@@ -667,7 +483,7 @@ class MyGame : public application
             process_events();
             
             if (escape)
-                goto skip_loop;
+                goto skipLoop;
             
             check_selectable_object();
             player.move(tick_rate);
@@ -676,7 +492,7 @@ class MyGame : public application
             if (player.should_sound_footstep() && !Mix_Playing(0))
                 Mix_PlayChannel(0, footsteps_wave, 0);
 
-skip_loop:
+skipLoop:
             accumulated -= tick_rate;
             ticks++;
             if (!(ticks%20))
@@ -685,7 +501,6 @@ skip_loop:
 
         player.makeView();
         check_on_frustum();
-        //order_objects();
     }
 
     inline void startFrame()

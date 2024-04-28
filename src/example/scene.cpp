@@ -509,9 +509,9 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     render_postprocess();
 }
 
-void scene::initSkybox(const path& vertex, const path& fragment)
+void scene::initSkybox(const path& vertex, const path& fragment, const path& skybox)
 {
-    m.skybox.init(vertex, fragment, 512, 512);
+    m.skybox.init(vertex, fragment, 512, 512, skybox);
 }
 
 void scene::initMeshes()

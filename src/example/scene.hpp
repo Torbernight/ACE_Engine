@@ -59,7 +59,6 @@ class scene
         float Saturation = 0.686;
         float Gamma = 2.2;
         float Exposure = 271.7570653294113;
-        //float Exposure = 271.7570653294113;
     } postprocess;
 
     static scene* import_scene(const path& pFile);
@@ -80,7 +79,7 @@ class scene
     void initMeshes();
     void initDRenderer(int w, int h);
 
-    void initSkybox(const path& vertex, const path& fragment);
+    void initSkybox(const path& vertex, const path& fragment, const path& skybox);
 
     void resizeViewport(int w, int h)
     {

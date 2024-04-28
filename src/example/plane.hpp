@@ -59,6 +59,12 @@ struct plane
         return sa == sb && sb == sc && sc != 0.0f;
     }
 
+    bool isOnOrForwardPlane(const glm::vec3& extent, const glm::vec3& center) const
+    {
+        return sdist(center)+glm::dot(glm::abs(normal), extent) >= 0;
+    }
+
+
     bool isOnOrForwardPlane(const AABB& box) const
     {
         glm::vec3 e = box.get_extent();
@@ -74,5 +80,11 @@ struct plane
         // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
         return std::abs(sdist(c)) <= glm::dot(glm::abs(normal), e);
     }
+
+    bool AABB_intersection(const glm::vec3& extent, const glm::vec3& center) const 
+    {
+        return std::abs(sdist(center)) <= glm::dot(glm::abs(normal), extent);
+    }
+
 
 };

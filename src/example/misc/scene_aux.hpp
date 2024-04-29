@@ -65,3 +65,18 @@ float h_fov_to_v_fov(float hfov, float aspect)
 {
     return 2 * atanf(tanf(hfov*0.5f)*aspect);
 }
+
+
+inline static
+aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
+{
+    aiMatrix4x4 Transform = aiMatrix4x4({1.0,1.0,1.0},{0.0,0.0,0.0,0.0},{0.0,0.0,0.0});
+    aiNode* Node = Scene->mRootNode->FindNode(nodeName);
+
+    while(nullptr != Node) {
+        Transform = Transform * Node->mTransformation;
+        Node = Node->mParent;
+    }
+
+    return Transform;
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <filesystem>
 #include <utility>
 #include "../texture.hpp"
@@ -11,80 +12,33 @@ class Material
 {
     public:
 
-    texture& loadAlbedo(const path& albedo)
+    enum Texture_Index
     {
-        image_data alb_data = process_image_data(load_image(albedo));
-        set_texture(m.Albedo, alb_data, last_slot++);
-        return m.Albedo;
-    }
+        Albedo,
+        Normal,
+        Roughness,
+        Emissive
+    };
 
-    texture& loadNormal(const path& normal)
+    texture& load(const path& Path, Texture_Index tex)
     {
-        image_data nor_data = process_image_data(load_image(normal));
-        set_texture(m.Normal, nor_data, last_slot++);
-        return m.Normal;
+        image_data data = process_image_data(load_image(Path));
+        set_texture(m.textures[tex], data, last_slot++);
+        return m.textures[tex];
     }
-
-    texture& loadRoughness(const path& roughness)
-    {
-        image_data roug_data = process_image_data(load_image(roughness));
-        set_texture(m.Roughness, roug_data, last_slot++);
-        return m.Roughness;
-    }
-
-    texture& loadEmissive(const path& emissive)
-    {
-        image_data em_data = process_image_data(load_image(emissive));
-        set_texture(m.Emissive, em_data, last_slot++);
-        return m.Emissive;
-    }
-
 
     void bind()
     {
-        if (m.Albedo) 
-            m.Albedo.bind_unit();
-        if (m.Normal) 
-            m.Normal.bind_unit();
-        if (m.Roughness) 
-            m.Roughness.bind_unit();
-        if (m.Emissive)
-            m.Emissive.bind_unit();
+        for(auto& T: m.textures){
+            if (T)
+                T.bind_unit();
+        }
     }
 
-    texture& get_albedo()
+    texture& get(Texture_Index T)
     {
-        return m.Albedo;
+        return m.textures[T];
     }
-    const texture& get_albedo() const
-    {
-        return m.Albedo;
-    }
-    texture& get_normal()
-    {
-        return m.Normal;
-    }
-    const texture& get_normal() const
-    {
-        return m.Normal;
-    }
-    texture& get_roughness()
-    {
-        return m.Roughness;
-    }
-    const texture& get_roughness() const
-    {
-        return m.Roughness;
-    }
-    texture& get_emissive()
-    {
-        return m.Emissive;
-    }
-    const texture& get_emissive() const
-    {
-        return m.Emissive;
-    }
-
 
     Material(const Material& M) :
     m(M.m)
@@ -125,15 +79,14 @@ class Material
 
     private:
 
+    inline static constexpr unsigned nTextures = 4;
+
     struct members
     {
-        texture Albedo;
-        texture Normal;
-        texture Roughness;
-        texture Emissive;
+        std::array<texture, nTextures> textures;
     } m;
 
     static void set_texture(texture& T, image_data& D, int slot);
-    static int last_slot;
+    static inline int last_slot = 0;
 
 };

@@ -4,13 +4,12 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "frustum.hpp"
+#include "geometry/frustum.hpp"
 #include "object.hpp"
 
 class camera
 {
     public:
-
 
     struct movement
     {

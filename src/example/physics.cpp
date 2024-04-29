@@ -55,8 +55,10 @@ void test_narrow_collision(const static_object& obj, camera& player, float tick_
     }
 }
 
-void resolve_collision(const triangle &tri, const vec3& normal, camera& player, float tick_rate)
+void resolve_collision(const triangle &tri, const glm::vec3& normal, camera& player, float tick_rate)
 {
+    using namespace glm;
+
     player.m.collision = true;
     player.m.floor_collision = normal.y > 0.1;
 

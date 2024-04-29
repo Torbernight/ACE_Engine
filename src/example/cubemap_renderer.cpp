@@ -78,16 +78,6 @@ void cubemap_renderer::init(const std::filesystem::path& vShader, const std::fil
     m.sProgram.linkProgram();
 
     initVAO();
-/*
-    const char* filenames[6] = {
-        "ps_right.png",
-        "ps_left.png",
-        "ps_top.png",
-        "ps_bottom.png",
-        "ps_back.png",
-        "ps_front.png"
-    };
-*/
     imageArray_data array_data = load_image_array("assets/textures/skybox/" / skybox);
 
     m.cubemap.generate();

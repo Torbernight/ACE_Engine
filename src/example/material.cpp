@@ -1,11 +1,8 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <iostream>
-#include "debug.hpp"
+#include "debug/debug.hpp"
 #include "material.hpp"
-
-int Material::last_slot = 0;
-
 
 void Material::set_texture(texture& T, image_data& D, int slot)
 {

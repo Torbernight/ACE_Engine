@@ -1,12 +1,28 @@
 #pragma once
-#include <iostream>
+
+#include <GL/glew.h>
 #include <SDL2/SDL.h>
+#include <iostream>
+
+inline static
+bool IsExtensionSupported(const char *name)
+{
+    GLint n = 0; 
+    glGetIntegerv(GL_NUM_EXTENSIONS, &n); 
+    for (GLint i = 0; i < n; i++){ 
+        const char* extension = (const char*)glGetStringi(GL_EXTENSIONS, i);
+        if (!strcmp(name, extension)){
+          return true;
+        }
+    }
+    return false;
+}
 
 inline static
 void BREAKPOINT()
 {
     SDL_SetRelativeMouseMode(SDL_FALSE);
-    std::cout << "Breakpoint Triggered!\n";
+    SDL_assert(false);
     SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 

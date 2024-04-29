@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "mesh.hpp"
-#include "triangle.hpp"
+#include "geometry/triangle.hpp"
 
 class object
 {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AABB.hpp"
-#include <glm/vec3.hpp>
 
 struct plane
 {

@@ -7,6 +7,7 @@ typedef std::chrono::milliseconds ms;
 typedef std::chrono::duration<float> fsec;
 typedef std::chrono::_V2::system_clock::time_point time_point;
 
+inline static
 time_point get_time()
 {
     return Time::now();

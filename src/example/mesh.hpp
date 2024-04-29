@@ -2,8 +2,8 @@
 
 #include "../vertexArray.hpp"
 #include "../buffer.hpp"
-#include "AABB.hpp"
-#include "frustum.hpp"
+#include "geometry/AABB.hpp"
+#include "geometry/frustum.hpp"
 #include <cstring>
 #include <string>
 #include <regex>
@@ -49,7 +49,6 @@ class mesh
         std::vector<unsigned int> indices;
         AABB bounding_box;
         glm::mat4 lastFrame_Transform = glm::mat4(1.0f);
-        //std::vector<glm::mat4> transforms;
         glm::mat4 transform;
         bool visible = true;
         unsigned int materialIndex = 0;

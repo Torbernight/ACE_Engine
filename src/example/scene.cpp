@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <execution>
 #include "scene.hpp"
-#include "scene_helper.hpp"
+#include "misc/scene_aux.hpp"
 
 void scene::combine_as_instance(mesh& A, mesh& Instance)
 {
@@ -160,20 +160,6 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
         process_node(Node->mChildren[n], Scene, Node->mTransformation);
 }
 
-inline static
-aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
-{
-    aiMatrix4x4 Transform = aiMatrix4x4({1.0,1.0,1.0},{0.0,0.0,0.0,0.0},{0.0,0.0,0.0});
-    aiNode* Node = Scene->mRootNode->FindNode(nodeName);
-
-    while(nullptr != Node) {
-        Transform = Transform * Node->mTransformation;
-        Node = Node->mParent;
-    }
-
-    return Transform;
-}
-
 void scene::find_instances()
 {
     auto it = Meshes.begin();
@@ -244,60 +230,37 @@ void scene::load_lights(const aiScene* S)
     }
 }
 
-inline static 
-int get_albedo(const path& P, Material& Mat)
-{
-    return Mat.loadAlbedo(P).get_slot();
-}
-inline static 
-int get_normal(const path& P, Material& Mat)
-{
-    return Mat.loadNormal(P).get_slot();
-}
-inline static 
-int get_roughness(const path& P, Material& Mat)
-{
-    return Mat.loadRoughness(P).get_slot();
-}
-
-inline static
-int get_emissive(const path& P, Material& Mat)
-{
-    return Mat.loadEmissive(P).get_slot();
-}
-
 void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat)
 {
     int* texture = nullptr;
-    int (*load_fun)(const path&, Material&) = nullptr;
+    Material::Texture_Index Index;
 
     switch(Type)
     {
         case aiTextureType_BASE_COLOR:
             texture = &matBuff.Albedo;
-            load_fun = get_albedo;
+            Index = Material::Texture_Index::Albedo;
             break;
         case aiTextureType_NORMALS:
             texture = &matBuff.Normal;
-            load_fun = get_normal;
+            Index = Material::Texture_Index::Normal;
             break;
         case aiTextureType_DIFFUSE_ROUGHNESS:
             texture = &matBuff.Roughness_metallic;
-            load_fun = get_roughness;
+            Index = Material::Texture_Index::Roughness;
             break;
         case aiTextureType_EMISSIVE:
             texture = &matBuff.Emissive;
-            load_fun = get_emissive;
+            Index = Material::Texture_Index::Emissive;
             break;
         default:
             return;
     }
-    if (M->GetTextureCount(Type))
-    {
+    if (M->GetTextureCount(Type)){
         aiString texture_path;
         M->GetTexture(Type, 0, &texture_path);
         path P = parentPath / texture_path.C_Str();
-        *texture = load_fun(P, Mat);
+        *texture = Mat.load(P, Index).get_slot();
     } else {
         *texture = -1;
     }
@@ -307,8 +270,7 @@ void scene::load_materials(const aiScene* S, const path& pFile)
 {
     unsigned int nMats = S->mNumMaterials;
     path parentPath = pFile.parent_path();
-    for(int n = 0; n < nMats; n++)
-    {
+    for(int n = 0; n < nMats; n++){
         const aiMaterial *M = S->mMaterials[n];
         material_buffer matBuff;
         Material Mat;
@@ -377,6 +339,13 @@ scene* scene::import_scene(const path& pFile)
             T.C = glm::vec3(Mesh.m.transform * glm::vec4(Mesh.m.vertices[C].position, 1.0f));
             obj.collision_mesh.push_back(T);
         }
+    }
+
+    for(auto &Obj : Scene->static_objects){
+        Scene->objects.push_back(&Obj);
+    }
+    for(auto& Obj : Scene->dynamic_objects){
+        Scene->objects.push_back(&Obj);
     }
 
     return Scene;

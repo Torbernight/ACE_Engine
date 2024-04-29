@@ -24,9 +24,6 @@
 #include <assimp/postprocess.h>
 
 typedef std::filesystem::path path;
-typedef glm::vec2 vec2;
-typedef glm::vec3 vec3;
-typedef glm::vec4 vec4;
 
 #define GL_FLOAT 0x1406
 #define GL_ARRAY_BUFFER 0x8892
@@ -51,6 +48,7 @@ class scene
     std::vector<Material> Materials;
     std::vector<static_object>  static_objects;
     std::vector<dynamic_object> dynamic_objects;
+    std::vector<object*> objects;
     std::vector<unsigned int> Mesh_indices;
 
     struct postprocess{

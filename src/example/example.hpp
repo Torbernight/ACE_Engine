@@ -44,7 +44,6 @@ class MyGame : public application
     Mix_Chunk *footsteps_wave = nullptr;
     ImGuiIO* imgui_IO = nullptr;
 
-
     camera player;
     scene *gameScene = nullptr;
 
@@ -60,6 +59,13 @@ class MyGame : public application
     bool showInfo = false;
     float mouse_sensitivity = 10.0f;
     float tick_rate = 1.0/60.0;
+    enum MS_Level{
+        MS_OFF,
+        MS_2,
+        MS_4,
+        MS_8,
+        MS_NUM_OPTIONS
+    } MSAA = MS_OFF;
 
 
     // initialization functions

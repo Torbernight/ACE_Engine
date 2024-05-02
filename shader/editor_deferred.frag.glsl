@@ -1,4 +1,5 @@
 #version 460
+layout(early_fragment_tests) in;
 
 #extension GL_GOOGLE_include_directive : enable
 

@@ -27,6 +27,8 @@ class texture
 
         void bind_unit();
 
+        void generate_mipmap();
+
         void unbind();
 
         void setTarget(unsigned int target)
@@ -59,8 +61,12 @@ class texture
         void setTexParameter(unsigned int parameter, const int *value);
         
         void genTexImage(const void* pixels);
+
+        void genTexImageMS(int MS);
         
         void genTexImage_cubemap(int side, const void* pixels);
+
+        void genTexImage_layer(int layer, const void* pixels);
 
         unsigned int get_TexObject() const {return m.texture;}
         unsigned int get_Target() const {return m.target;}
@@ -112,11 +118,11 @@ class texture
         : m(tp)
         {}
 
-        operator bool()
+        operator bool() const
         {
                 return m.texture != 0;
         }
-        bool operator!()
+        bool operator!() const
         {
                 return m.texture == 0;
         }

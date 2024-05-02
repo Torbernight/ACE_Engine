@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <GL/glew.h>
 #include "framebuffer.hpp"
@@ -24,51 +25,74 @@ void framebuffer::unbind()
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void framebuffer::resize(unsigned int w, unsigned int h)
+void framebuffer::reset(int MSAA)
 {
-        m.w = w;
-        m.h = h;
+        this->m.MSAA = MSAA;
 
         if (!m.FBO)
                 return;
         
         glDeleteFramebuffers(1, &m.FBO);
         glGenFramebuffers(1, &m.FBO);
-
         glDeleteRenderbuffers(1, &m.RBO);
+
         for (auto &T : m.color_attachments){
                 glDeleteTextures(1, &T.m.texture);
+                if (m.MSAA != 0){
+                        T.setTarget(GL_TEXTURE_2D_MULTISAMPLE);
+                } else{
+                        T.setTarget(GL_TEXTURE_2D);
+                }
                 T.generate();
-                T.setWidth(w);
-                T.setHeight(h);
+                T.setWidth(m.w);
+                T.setHeight(m.h);
                 T.bind();
-                T.genTexImage(nullptr);
-                T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                if (m.MSAA != 0){
+                        T.genTexImageMS(m.MSAA);               
+                } else {
+                        T.genTexImage(nullptr);
+                        T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
                 T.unbind();
         }
         if (m.depth_attachment){
                 texture &T = m.depth_attachment;
                 glDeleteTextures(1, &T.m.texture);
+                if (m.MSAA){
+                        T.setTarget(GL_TEXTURE_2D_MULTISAMPLE);
+                } else{
+                        T.setTarget(GL_TEXTURE_2D);
+                }
                 T.generate();
-                T.setWidth(w);
-                T.setHeight(h);
+                T.setWidth(m.w);
+                T.setHeight(m.h);
                 T.bind();
-                T.genTexImage(nullptr);
-                T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                if (m.MSAA){
+                        T.genTexImageMS(m.MSAA);               
+                } else {
+                        T.genTexImage(nullptr);
+                        T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                        T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                }
                 T.unbind();
-
         }
         setup();
 }
 
+
+void framebuffer::resize(unsigned int w, unsigned int h)
+{
+        m.w = w;
+        m.h = h;
+        reset(m.MSAA);
+}
 bool framebuffer::getFramebufferStatus()
 {
         switch(glCheckFramebufferStatus(GL_FRAMEBUFFER))
@@ -100,6 +124,7 @@ bool framebuffer::getFramebufferStatus()
                         std::cerr << "Error: Framebuffer incomplete! status GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS\n";
                         break;
         }
+        assert(false);
         return false;
 }
 
@@ -107,6 +132,7 @@ bool framebuffer::getFramebufferStatus()
 void framebuffer::setup()
 {
         std::vector<unsigned int> drawBuffers;
+        drawBuffers.clear();
         drawBuffers.reserve(m.color_attachments.size());
 
         bind();
@@ -162,41 +188,56 @@ void framebuffer::create_RBO()
         } else {
                 return;
         }
-
         glGenRenderbuffers(1, &m.RBO);
         glBindRenderbuffer(GL_RENDERBUFFER, m.RBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, m.w, m.h);
+        if (m.MSAA == 0){
+                glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, m.w, m.h);
+        } else {
+                glRenderbufferStorageMultisample(GL_RENDERBUFFER, m.MSAA, internalFormat, m.w, m.h);
+        }
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, m.RBO);
 }
 
-texture& framebuffer::gen_depth_attachment(const texture::texture_parameters& tp)
+texture& framebuffer::gen_depth_attachment(const texture::texture_parameters& tp, int MSAA)
 {
+        this->m.MSAA = MSAA;
         m.depth_attachment = texture(tp);
         m.depth_attachment.generate();
         m.depth_attachment.bind();
-        m.depth_attachment.genTexImage(nullptr);
-        m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        m.depth_attachment.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        m.depth_attachment.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if (MSAA){
+                m.depth_attachment.genTexImageMS(MSAA);               
+        } else {
+                m.depth_attachment.genTexImage(nullptr);
+                m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                m.depth_attachment.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                m.depth_attachment.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                m.depth_attachment.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        }
+
         m.depth_attachment.unbind();
         return m.depth_attachment;
 }
 
 
-texture& framebuffer::gen_color_attachment(const texture::texture_parameters& tp)
+texture& framebuffer::gen_color_attachment(const texture::texture_parameters& tp, int MSAA)
 {
+        this->m.MSAA = MSAA;
         texture T(tp);
         T.generate();
         T.bind();
-        T.genTexImage(nullptr);
-        T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if (T.get_Target() == GL_TEXTURE_2D_MULTISAMPLE){
+                T.genTexImageMS(MSAA);               
+        } else {
+                T.genTexImage(nullptr);
+                T.setTexParameter(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                T.setTexParameter(GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                T.setTexParameter(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+
         T.unbind();
         m.color_attachments.push_back(T);
         return m.color_attachments.back();

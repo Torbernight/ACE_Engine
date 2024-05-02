@@ -1,4 +1,5 @@
 #include <GL/glew.h>
+#include "shader_compiler.hpp"
 #include "../texture_load.hpp"
 #include "cubemap_renderer.hpp"
 
@@ -68,8 +69,8 @@ void cubemap_renderer::initVAO()
 
 void cubemap_renderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, const std::filesystem::path& skybox, int cubemap_binding)
 {
-    m.vShader.loadBinary(vShader);
-    m.fShader.loadBinary(fShader);
+    m.vShader = compile_shader(shader_source(EShLanguage::EShLangVertex, vShader));
+    m.fShader = compile_shader(shader_source(EShLanguage::EShLangFragment, fShader));
     m.vShader.specialize();
     m.sProgram.attachShader(m.vShader);
     m.fShader.add_specialization_const(cubemap_binding, 0);

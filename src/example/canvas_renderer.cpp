@@ -59,8 +59,12 @@ void canvas_renderer::initVAO()
 
 void canvas_renderer::initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h)
 {
-        m.vShader.loadBinary(vShader);
-        m.fShader.loadBinary(fShader);
+        m.vShader_Path = vShader;
+        m.fShader_Path = fShader;
+        m.vShader = compile_shader(shader_source(EShLangVertex, m.vShader_Path));
+        m.fShader = compile_shader(shader_source(EShLangFragment, m.fShader_Path));
+        //m.vShader.loadBinary(vShader);
+        //m.fShader.loadBinary(fShader);
         m.vShader.specialize();
         m.sProgram.attachShader(m.vShader);
         m.fShader.specialize();
@@ -91,11 +95,57 @@ void canvas_renderer::initFBO(int w, int h, std::initializer_list<texture::textu
         m.FB.setup();
        
 }
-
-void canvas_renderer::initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h)
+void canvas_renderer::recompile_shader(ShaderStage stage)
 {
-        m.vShader.loadBinary(vShader);
-        m.fShader.loadBinary(fShader);
+        shader_source src;
+        Shader *S = nullptr;
+        if (stage == Fragment){
+                S = &m.fShader;
+                src = shader_source(EShLangFragment, m.fShader_Path);
+
+        } else if (stage == Vertex){
+                S = &m.vShader;
+                src = shader_source(EShLangVertex, m.vShader_Path);
+        }
+        std::vector<unsigned int> SPIRV;
+        compile_shader_SPV(src, SPIRV);
+        S->reloadBinary(SPIRV);
+        m.sProgram.attachShader(*S);
+        m.sProgram.linkProgram();
+}
+
+void canvas_renderer::recompile_shader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
+{
+        shader_source src;
+        Shader *S = nullptr;
+        if (stage == Fragment){
+                S = &m.fShader;
+                src = shader_source(EShLangFragment, m.fShader_Path);
+
+        } else if (stage == Vertex){
+                S = &m.vShader;
+                src = shader_source(EShLangVertex, m.vShader_Path);
+        }
+        std::string constants = "";
+        for (auto &S : preprocessor_constants){
+                constants += S + "\n";
+        }
+        std::vector<unsigned int> SPIRV;
+        compile_shader_SPV(src, SPIRV, constants.c_str());
+        S->reloadBinary(SPIRV);
+        S->specialize();
+        m.sProgram.attachShader(*S);
+        m.sProgram.linkProgram();
+}
+
+void canvas_renderer::initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h, int MSAA)
+{
+        m.vShader_Path = vShader;
+        m.fShader_Path = fShader;
+
+        m.vShader = compile_shader(shader_source(EShLangVertex, m.vShader_Path));
+        m.fShader = compile_shader(shader_source(EShLangFragment, m.fShader_Path));
+
         m.vShader.specialize();
         m.sProgram.attachShader(m.vShader);
         m.fShader.add_specialization_const(nMaterials, 0);
@@ -105,15 +155,16 @@ void canvas_renderer::initDeferred(const std::filesystem::path& vShader, const s
 
         initVAO();
 
+        unsigned int target = MSAA ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D; 
+    
         initFBO(w, h, 
         {
-        {GL_TEXTURE_2D, 0, GL_RGBA, GL_RGBA8, GL_UNSIGNED_BYTE, (unsigned int)w, (unsigned int)h}, //albedo
-        {GL_TEXTURE_2D, 1, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //normal
-        {GL_TEXTURE_2D, 2, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //pos
-        {GL_TEXTURE_2D, 3, GL_RGB, GL_RGB16F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //AO_roughness_metallic
-        {GL_TEXTURE_2D, 4, GL_RGB, GL_RGB16F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //emissive
-        {GL_TEXTURE_2D, 5, GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, (unsigned int)w, (unsigned int)h}
+        {target, 0, GL_RGBA, GL_RGBA8, GL_UNSIGNED_BYTE, (unsigned int)w, (unsigned int)h}, //albedo
+        {target, 1, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //normal
+        {target, 2, GL_RGB, GL_RGB32F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //pos
+        {target, 3, GL_RGB, GL_RGB16F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //AO_roughness_metallic
+        {target, 4, GL_RGB, GL_RGB16F, GL_FLOAT,         (unsigned int)w, (unsigned int)h}, //emissive
+        {target, 5, GL_DEPTH_STENCIL, GL_DEPTH24_STENCIL8, GL_UNSIGNED_INT_24_8, (unsigned int)w, (unsigned int)h}
         });
-
 }
 

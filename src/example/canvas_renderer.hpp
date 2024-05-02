@@ -7,6 +7,7 @@
 #include "../framebuffer.hpp"
 #include "../shader.hpp"
 #include "../texture.hpp"
+#include "shader_compiler.hpp"
 
 class canvas_renderer
 {
@@ -44,7 +45,17 @@ class canvas_renderer
         void render();
 
         void initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h);
-        void initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h);
+        void initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h, int MSAA = 0);
+
+        void reset()
+        {
+                m.FB.reset(m.FB.getMSAA());
+        }
+
+        void reset(int MSAA)
+        {
+                m.FB.reset(MSAA);
+        }
 
         void resize(int w, int h)
         { 
@@ -52,6 +63,9 @@ class canvas_renderer
                 m.h = h;
                 m.FB.resize(m.w,m.h); 
         }
+
+        void recompile_shader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants);
+        void recompile_shader(ShaderStage stage);
 
         Shader* getShader(ShaderStage stage)
         {
@@ -72,6 +86,8 @@ class canvas_renderer
         struct members
         {
                 framebuffer FB;
+                std::filesystem::path vShader_Path;
+                std::filesystem::path fShader_Path;
                 Shader vShader;
                 Shader fShader;
                 shaderProgram sProgram;

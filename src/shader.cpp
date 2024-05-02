@@ -1,5 +1,6 @@
 #include <iostream>
 #include <GL/glew.h>
+#include <cstring>
 #include "shader.hpp"
 
 void Shader::loadFile(const std::filesystem::path& P)
@@ -10,34 +11,51 @@ void Shader::loadFile(const std::filesystem::path& P)
         }
         size_t len = input.tellg();
         input.seekg(std::ios_base::beg);
-        size_t padding = len%4 == 0 ? 0 : 4 - len%4;
-        char* data = new char[len+padding];
-        input.read(data, len);
+        //size_t padding = len%4 == 0 ? 0 : 4 - len%4;
+        m.bin.resize(len/4);
+        uint32_t *data = m.bin.data();
+        input.read((char*)data, len);
         input.close();
-        len += padding;
-        m.bin = std::wstring((wchar_t*)data, len/4);
-        delete[] data;
+        //len += padding;
+        //m.bin = std::wstring((wchar_t*)data, len/4);
+        //delete[] data;
 }
 
-
+void Shader::reloadBinary(const std::vector<unsigned int>& bin)
+{
+        m.bin = bin;
+        glDeleteShader(m.ShaderID);
+        m.ShaderID = glCreateShader(m.stage);
+        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, m.bin.data() , m.bin.size()*4UL);
+}
 
 void Shader::loadBinary(const std::filesystem::path& P)
 {
         loadFile(P);
-        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
+        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, m.bin.data() , m.bin.size()*4UL);
 }
+
+Shader::Shader(ShaderStage stage, const std::vector<uint32_t>& bin)
+{
+        m.stage = stage;
+        m.ShaderID = glCreateShader(stage);
+        loadEmbedded(bin.data(), bin.size());
+}
+
 
 void Shader::loadEmbedded(const uint32_t* data, size_t len)
 {
-        m.bin = std::wstring((wchar_t*)data, len);
-        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
+        m.bin.resize(len);
+        std::memcpy(m.bin.data(), data, len*4);
+        //m.bin = std::wstring((wchar_t*)data, len);
+        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, m.bin.data() , m.bin.size()*4UL);
 }
 
 
 
 void Shader::loadBinary()
 {
-        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, (const void*)m.bin.c_str() , m.bin.length()*4UL);
+        glShaderBinary(1, &m.ShaderID, GL_SHADER_BINARY_FORMAT_SPIR_V, m.bin.data() , m.bin.size()*4UL);
 }
 
 
@@ -179,6 +197,11 @@ void shaderProgram::attachShader(const Shader& S)
         glAttachShader(m.ProgramID, S.getShaderID());
 }
 
+void shaderProgram::dettachShader(const Shader& S)
+{
+        glDetachShader(m.ProgramID, S.getShaderID());
+}
+
 
 void shaderProgram::linkProgram()
 {
@@ -192,8 +215,10 @@ void shaderProgram::get_status()
         glGetProgramiv(m.ProgramID, GL_LINK_STATUS, &status);
         if (GL_FALSE == status)
         {
-                char *log = new char[512];
-                glGetProgramInfoLog(m.ProgramID, 512, nullptr, log);
+                int len;
+                glGetProgramiv(m.ProgramID, GL_INFO_LOG_LENGTH, &len);
+                char *log = new char[len+1];
+                glGetProgramInfoLog(m.ProgramID, len+1, nullptr, log);
                 std::cerr << "Error: program not linked!\n" << log << std::endl;
                 delete[] log;
         }

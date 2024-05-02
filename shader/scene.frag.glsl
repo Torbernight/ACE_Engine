@@ -2,7 +2,7 @@
 
 #extension GL_GOOGLE_include_directive : enable
 
-layout(constant_id = 0) const uint nMaterials = 1;
+layout(constant_id = 0) const uint nTextures = 1;
 
 layout(location=0) in vec3 iPos;
 layout(location=1) in vec2 iTexCoords;
@@ -25,35 +25,35 @@ const mat4 bayerMat = mat4(
 
 #include "materials.glsl"
 
-layout(binding=0) uniform sampler2D TextureArray[nMaterials*4];
+layout(binding=0) uniform sampler2D TextureArray[nTextures];
 
 vec3 get_albedo()
 {
-    if (albedo_index < 0)
+    if (uAlbedo_index < 0)
         return vec3(0.0);
-    return texture(TextureArray[albedo_index], iTexCoords).rgb;
+    return texture(TextureArray[uAlbedo_index], iTexCoords).rgb;
 }
 
 vec3 get_normal()
 {
-    if (normal_index < 0)
+    if (uNormal_index < 0)
         return iNormal;
     return mat3(iTangent, iBitangent, iNormal) * 
-    (texture(TextureArray[normal_index], iTexCoords).xyz*2.0-1.0);
+    (texture(TextureArray[uNormal_index], iTexCoords).xyz*2.0-1.0);
 }
 
 vec3 get_AO_roughness_metallic()
 {
-    if (AO_roughness_metallic_index < 0)
+    if (uAO_roughness_metallic_index < 0)
         return vec3(1.0, 0.0, 0.0);
-    return texture(TextureArray[AO_roughness_metallic_index], iTexCoords).rgb;
+    return texture(TextureArray[uAO_roughness_metallic_index], iTexCoords).rgb;
 }
 
 vec3 get_emissive()
 {
-    if (emissive_index < 0)
+    if (uEmissive_index < 0)
         return vec3(0);
-    return texture(TextureArray[emissive_index], iTexCoords).rgb;
+    return texture(TextureArray[uEmissive_index], iTexCoords).rgb;
 }
 
 void main()
@@ -62,16 +62,18 @@ void main()
     index = index%ivec2(4);
     float A = bayerMat[index.y][index.x];
 
-    if(step(alpha, A) == 1.0){
-        discard;
+    float alpha = step(A, uAlpha);
+    if(alpha == 0){
+        return;
     }
-    
-    oAlbedo = vec4(get_albedo(), 1.0);
-    oNormal = vec4(normalize(get_normal()), 1.0);
-    oAO_Roughness_Metallic = vec4(get_AO_roughness_metallic(), 1.0);
-    oPosition = vec4(iPos, 1.0);
-    oEmissive = vec4(get_emissive(), 1.0);
-    if (glow != 0) {
-        oEmissive = vec4(1.0);
+
+    oAlbedo = vec4(get_albedo(), alpha);
+    oNormal = vec4(normalize(get_normal()), alpha);
+    oAO_Roughness_Metallic = vec4(get_AO_roughness_metallic(), alpha);
+    oPosition = vec4(iPos, alpha);
+    oEmissive = vec4(get_emissive(), alpha);
+    if (uGlow != 0) {
+        oEmissive = vec4(1.0, 1.0, 1.0, alpha);
     }
 }
+

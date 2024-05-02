@@ -57,11 +57,16 @@ class scene
         float Saturation = 0.686;
         float Gamma = 2.2;
         float Exposure = 271.7570653294113;
+        bool FXAA = true;
     } postprocess;
 
     static scene* import_scene(const path& pFile);
 
     void load_DeferredShader(const path& vertex, const path& fragment);
+    
+    void reload_DeferredShader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants);
+    void reload_DeferredShader(ShaderStage stage);
+
     void load_SceneShader(const path& vertex, const path& fragment)
     {
         m.scene_vShader = vertex;
@@ -76,6 +81,7 @@ class scene
     void setUBO();
     void initMeshes();
     void initDRenderer(int w, int h);
+    void initDRenderer(int w, int h, int MSAA);
 
     void initSkybox(const path& vertex, const path& fragment, const path& skybox);
 

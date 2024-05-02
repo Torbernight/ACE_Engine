@@ -7,3 +7,4 @@ src/example/*.d
 imgui.ini
 *.out
 assets/*.blend1
+notes/

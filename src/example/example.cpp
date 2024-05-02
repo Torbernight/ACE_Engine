@@ -27,8 +27,9 @@ void MyGame::init_gl_parameters()
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 void MyGame::init_audio()
 {
@@ -63,13 +64,13 @@ void MyGame::init()
         win.set_shouldClose(true);
         return;
     }
-    gameScene->load_SceneShader("shader/scene.vert.spv", "shader/scene.frag.spv");
-    gameScene->load_DeferredShader("shader/deferred.vert.spv", "shader/deferred.frag.spv");
-    gameScene->load_PostProcShader("shader/deferred.vert.spv", "shader/postprocess.frag.spv");
-    gameScene->initSkybox("shader/skybox.vert.spv", "shader/skybox.frag.spv", "ps.tif");
+    gameScene->load_SceneShader("shader/scene.vert.glsl", "shader/scene.frag.glsl");
+    gameScene->load_DeferredShader("shader/deferred.vert.glsl", "shader/deferred.frag.glsl");
+    gameScene->load_PostProcShader("shader/deferred.vert.glsl", "shader/postprocess.frag.glsl");
+    gameScene->initSkybox("shader/skybox.vert.glsl", "shader/skybox.frag.glsl", "ps.tif");
     gameScene->setUBO();
     gameScene->initMeshes();
-    gameScene->initDRenderer(win.getWidth(), win.getHeight());
+    gameScene->initDRenderer(win.getWidth(), win.getHeight(), MSAA);
 
     if (!glm::any(glm::isnan(gameScene->get_defaultCamPos())))
         player.setPos(gameScene->get_defaultCamPos());
@@ -101,6 +102,7 @@ void MyGame::resize_window(int w, int h)
     player.setAspect(aspect);
     player.makeProj();
     TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
+    
 }
 
 void MyGame::setVSync()
@@ -114,7 +116,7 @@ void MyGame::update_UBOs()
     camera_UBO camBuff = {glm::vec4(player.getPos(), 0), glm::vec4(player.getFront(), 0), player.getNear(), player.getFar()};
     Camera_Buffer.bufferSubData(sizeof(camBuff), 0, &camBuff);
     TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
-    state_UBO stateBuff = {frame, runtime, dt, {win.getWidth()*0.5f, win.getHeight()*0.5f}};
+    state_UBO stateBuff = {frame, runtime, dt, {win.getWidth(), win.getHeight()}};
     State_Buffer.bufferSubData(sizeof(stateBuff), 0, &stateBuff);
 }
 

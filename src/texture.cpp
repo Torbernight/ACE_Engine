@@ -26,6 +26,12 @@ void texture::unbind()
         glBindTexture(m.target, 0);
 }
 
+void texture::generate_mipmap()
+{
+        glGenerateTextureMipmap(m.texture);
+}
+
+
 int texture::get_target_dims()
 {
         switch(m.target)
@@ -35,6 +41,7 @@ int texture::get_target_dims()
                 return 1;
 
                 case GL_TEXTURE_2D: 
+                case GL_TEXTURE_2D_MULTISAMPLE: 
                 case GL_PROXY_TEXTURE_2D: 
                 case GL_TEXTURE_1D_ARRAY: 
                 case GL_PROXY_TEXTURE_1D_ARRAY: 
@@ -76,10 +83,36 @@ void texture::genTexImage(const void* pixels)
         }
 }
 
+#include <cassert>
+
+void texture::genTexImageMS(int MS)
+{
+        switch(get_target_dims())
+        {
+                case 1:
+                        assert("ERROR: multisample texture can't be one dimensional" && false);
+                        break;
+                case 2:
+                        glTexImage2DMultisample(m.target, MS, m.internal_format, m.width, m.height, GL_FALSE);
+                        break;
+                case 3:
+                        glTexImage3DMultisample(m.target, MS, m.internal_format, m.width, m.height, m.depth, GL_FALSE);
+                        break;
+        }
+        
+}
+
+
 void texture::genTexImage_cubemap(int side, const void* pixels)
 {
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, 0, m.internal_format, m.width, m.height, 0, m.format, m.type, pixels);
 }
+
+void texture::genTexImage_layer(int layer, const void* pixels)
+{
+        glTexSubImage3D(m.target, 0,0,0,layer,m.width,m.height,1,m.format,m.type,pixels);
+}
+
 
 
 void texture::setTexParameter(unsigned int parameter, int value)

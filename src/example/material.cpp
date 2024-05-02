@@ -15,10 +15,11 @@ void Material::set_texture(texture& T, image_data& D, int slot)
     T.setFormat(D.format, D.internal_format);
     T.bind();
     T.genTexImage(D.data);
-    T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    T.setTexParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     T.setTexParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     T.setTexParameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
     T.setTexParameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
+    T.generate_mipmap();
     T.unbind();
     delete[] D.data;
 }

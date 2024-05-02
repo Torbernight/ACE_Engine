@@ -45,6 +45,11 @@ class cubemap_renderer
             }
     }
 
+    operator bool() const
+    {
+        return m.cubemap;
+    }
+
     private:
     struct members
     {

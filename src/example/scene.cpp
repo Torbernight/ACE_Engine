@@ -4,6 +4,7 @@
 #include <execution>
 #include "scene.hpp"
 #include "misc/scene_aux.hpp"
+#include "shader_compiler.hpp"
 
 void scene::combine_as_instance(mesh& A, mesh& Instance)
 {
@@ -351,13 +352,61 @@ scene* scene::import_scene(const path& pFile)
     return Scene;
 }
 
+void scene::reload_DeferredShader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
+{
+    shader_source src;
+    Shader *S = nullptr;
+    if (stage == Fragment){
+            S = &m.fShader;
+            src = shader_source(EShLangFragment, m.deferred_fShader);
+
+    } else if (stage == Vertex){
+            S = &m.vShader;
+            src = shader_source(EShLangVertex, m.deferred_vShader);
+    }
+    std::string preamble = "";
+    for (auto &S : preprocessor_constants){
+            preamble += S + "\n";
+    }
+    std::vector<unsigned int> SPIRV;
+    compile_shader_SPV(src, SPIRV, preamble.c_str());
+    m.sProgram.dettachShader(*S);
+    S->reloadBinary(SPIRV);
+    S->specialize();
+    m.sProgram.attachShader(*S);
+    m.sProgram.linkProgram();
+}
+void scene::reload_DeferredShader(ShaderStage stage)
+{
+    shader_source src;
+    Shader *S = nullptr;
+    if (stage == Fragment){
+            S = &m.fShader;
+            src = shader_source(EShLangFragment, m.deferred_fShader);
+
+    } else if (stage == Vertex){
+            S = &m.vShader;
+            src = shader_source(EShLangVertex, m.deferred_vShader);
+    }
+    std::vector<unsigned int> SPIRV;
+    compile_shader_SPV(src, SPIRV);
+    m.sProgram.dettachShader(*S);
+    S->reloadBinary(SPIRV);
+    S->specialize();
+    m.sProgram.attachShader(*S);
+    m.sProgram.linkProgram();
+}
+
 void scene::load_DeferredShader(const path& vertex, const path& fragment)
 {
     m.deferred_vShader = vertex;
     m.deferred_fShader = fragment;
 
-    m.vShader.loadBinary(vertex);
-    m.fShader.loadBinary(fragment);
+    m.vShader = compile_shader(shader_source(EShLanguage::EShLangVertex, m.deferred_vShader));
+    m.fShader = compile_shader(shader_source(EShLanguage::EShLangFragment, m.deferred_fShader));
+
+    //m.vShader.loadBinary(vertex);
+    //m.fShader.loadBinary(fragment);
 
     for(int i = 0; i < m.init_constants.size(); i++)
     {
@@ -461,6 +510,9 @@ void scene::bind_materials()
 
 void scene::render_skybox()
 {
+    if (!m.skybox)
+        return;
+    
     m.skybox.use_shader();
     m.skybox.bind_texture();
     m.skybox.render();
@@ -489,8 +541,13 @@ void scene::initMeshes()
         M.init();
 }
 
+void scene::initDRenderer(int w, int h, int MSAA)
+{
+    m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, m.Materials.size()*4, w, h, MSAA);
+    m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w,h);
+}
 void scene::initDRenderer(int w, int h)
 {
-    m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, Materials.size(), w, h);
+    m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, m.Materials.size()*4, w, h);
     m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w,h);
 }

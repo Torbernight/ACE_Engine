@@ -8,10 +8,16 @@
 
 typedef std::filesystem::path path;
 
+class sprite;
+class scene;
+
 class Material
 {
     public:
 
+    friend class sprite;
+    friend class scene;
+    
     enum Texture_Index
     {
         Albedo,

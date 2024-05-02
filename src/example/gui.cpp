@@ -43,6 +43,23 @@ void MyGame::info_window()
     ImGui::End();
 }
 
+inline static const char* get_MSAA_str(MyGame::MS_Level L)
+{
+    switch(L)
+    {
+        case MyGame::MS_Level::MS_OFF:
+            return "Off";
+        case MyGame::MS_Level::MS_2:
+            return "x2";
+        case MyGame::MS_Level::MS_4:
+            return "x4";
+        case MyGame::MS_Level::MS_8:
+            return "x8";
+        default:
+            return "";
+    }
+}
+
 
 void MyGame::show_config()
 {
@@ -65,6 +82,23 @@ void MyGame::show_config()
     postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
     postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
     postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, -5.0, 5.0);
+    postProc_Update |= ImGui::Checkbox("FXAA", &gameScene->postprocess.FXAA);
+
+    ImGui::SeparatorText("Graphics Options");
+
+    int msaa_level = (int)MSAA;
+    if (ImGui::SliderInt("MSAA", &msaa_level, 0, MS_Level::MS_NUM_OPTIONS-1, get_MSAA_str(MSAA), ImGuiSliderFlags_AlwaysClamp))
+    {
+        MSAA = (MS_Level)(msaa_level);
+        msaa_level = MSAA == MS_OFF ? 0 : 1 << msaa_level;
+        gameScene->get_DRenderer().reset(msaa_level);
+        if (msaa_level){
+            std::string MSAA_LEVEL_STR = "#define MSAA_LEVEL " + std::to_string(msaa_level) + "\n";
+            gameScene->reload_DeferredShader(Fragment, {MSAA_LEVEL_STR});
+        } else {
+            gameScene->reload_DeferredShader(Fragment);
+        }
+    }
 
     uint8_t camera_update = 0;
     ImGui::SeparatorText("Camera options");

@@ -1,5 +1,7 @@
 #version 460
 
+layout(early_fragment_tests) in;
+
 #extension GL_GOOGLE_include_directive : enable
 
 layout(constant_id = 0) const int cubemap_binding = 0;

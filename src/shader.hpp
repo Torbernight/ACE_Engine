@@ -36,6 +36,7 @@ class Shader
 
     void loadBinary(const std::filesystem::path&);
     void loadBinary();
+    void reloadBinary(const std::vector<unsigned int>& bin);
 
     void loadEmbedded(const uint32_t* data, size_t len);
 
@@ -48,6 +49,7 @@ class Shader
 
     Shader(ShaderStage stage);
     Shader(ShaderStage stage, const uint32_t* bin, size_t size);
+    Shader(ShaderStage stage, const std::vector<uint32_t>& bin);
     Shader(ShaderStage stage, const std::filesystem::path&);
     Shader(Shader&);
     Shader(Shader&&);
@@ -66,7 +68,7 @@ class Shader
     struct members{
         ShaderStage stage;
         unsigned int ShaderID = 0;
-        std::wstring bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
+        std::vector<uint32_t> bin; //intending to only use spir-V shaders, but maybe add compiling in runtime
         std::vector<uint32_t> specialization_constants;
         std::vector<uint32_t> specialization_constants_indices;
         bool status = false;
@@ -112,6 +114,7 @@ class shaderProgram
     static void unuse();
 
     void attachShader(const Shader& S);
+    void dettachShader(const Shader& S);
     
     void linkProgram();
 

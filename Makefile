@@ -29,7 +29,7 @@ EDITOR_OBJ = $(EDITOR_SOURCE: .cpp=.o)
 
 DEPENDS = ${OBJ:.o=.d}
 
-LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp -ltbb -lSDL2_mixer
+LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp -ltbb -lSDL2_mixer -lSPIRV -lglslang-default-resource-limits
 
 EXE= cpp_template.out
 EDITOR = cpp_editor.out

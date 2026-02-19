@@ -4,7 +4,7 @@
 #include <SDL_assert.h>
 #include "texture_load.hpp"
 
-image_data load_image(const std::filesystem::path& P)
+ImageData load_image(const std::filesystem::path& P)
 {
         fipImage image;
         if (!image.load(P.c_str(), 0))
@@ -13,7 +13,7 @@ image_data load_image(const std::filesystem::path& P)
                 SDL_assert(false);
                 return {};
         }
-        image_data data;
+        ImageData data;
         data.width = image.getWidth();
         data.height = image.getHeight();
         data.data_len = image.getHeight()*image.getScanWidth();
@@ -24,9 +24,9 @@ image_data load_image(const std::filesystem::path& P)
         return data;
 }
 
-image_data process_image_data(const image_data& data)
+ImageData process_image_data(const ImageData& data)
 {
-    image_data D = data;
+    ImageData D = data;
     switch(D.type)
     {
         case FIT_BITMAP:
@@ -87,7 +87,7 @@ image_data process_image_data(const image_data& data)
     return D;
 }
 
-imageArray_data load_image_array(const std::filesystem::path& P)
+ImageArrayData load_image_array(const std::filesystem::path& P)
 {
     fipMultiPage image;
         
@@ -97,9 +97,9 @@ imageArray_data load_image_array(const std::filesystem::path& P)
         SDL_assert(false);
         return {};
     }
-    imageArray_data data;
+    ImageArrayData data;
     data.layers = image.getPageCount();
-    data.data = new image_data[data.layers];
+    data.data = new ImageData[data.layers];
 
     for (int n = 0; n < data.layers; n++){
         fipImage layer;
@@ -108,7 +108,7 @@ imageArray_data load_image_array(const std::filesystem::path& P)
             std::cerr << "ERROR loading layer " << n << "\n";
             return {};
         }
-        image_data &D = data.data[n];
+        ImageData &D = data.data[n];
         D.width = layer.getWidth();
         D.height = layer.getHeight();
         D.data_len = layer.getHeight()*layer.getScanWidth();

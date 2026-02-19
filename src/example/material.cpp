@@ -4,7 +4,7 @@
 #include "debug/debug.hpp"
 #include "material.hpp"
 
-void Material::set_texture(texture& T, image_data& D, int slot)
+void Material::set_texture(Texture& T, ImageData& D, int slot)
 {
     T.setWidth(D.width);
     T.setHeight(D.height);

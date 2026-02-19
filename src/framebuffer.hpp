@@ -2,11 +2,11 @@
 #include <vector>
 #include "texture.hpp"
 
-class framebuffer
+class Framebuffer
 {
         public:
 
-        ~framebuffer();
+        ~Framebuffer();
 
         void gen_FBO();
 
@@ -20,8 +20,8 @@ class framebuffer
         void resize(unsigned int w, unsigned int h);
         void reset(int MSAA = 0);
 
-        texture& gen_color_attachment(const texture::texture_parameters& tp, int MSAA = 0);
-        texture& gen_depth_attachment(const texture::texture_parameters& tp, int MSAA = 0);
+        Texture& gen_color_attachment(const Texture::TextureParameters& tp, int MSAA = 0);
+        Texture& gen_depth_attachment(const Texture::TextureParameters& tp, int MSAA = 0);
 
         void bind();
         static void unbind();
@@ -37,8 +37,8 @@ class framebuffer
         struct members{
                 unsigned int FBO = 0;
                 unsigned int RBO = 0;
-                std::vector<texture> color_attachments;
-                texture depth_attachment;
+                std::vector<Texture> color_attachments;
+                Texture depth_attachment;
                 unsigned int w = 0, h = 0;
                 int MSAA = 0;
         } m;

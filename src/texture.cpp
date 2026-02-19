@@ -1,38 +1,38 @@
 #include <GL/glew.h>
 #include "texture.hpp"
 
-texture::~texture()
+Texture::~Texture()
 {
         glDeleteTextures(1, &m.texture);
 }
 
-void texture::generate()
+void Texture::generate()
 {
         glGenTextures(1, &m.texture);
 }
 
-void texture::bind_unit()
+void Texture::bind_unit()
 {
         if (m.texture != 0)
                 glBindTextureUnit(m.slot, m.texture);
 }
 
-void texture::bind()
+void Texture::bind()
 {
         glBindTexture(m.target, m.texture);
 }
-void texture::unbind()
+void Texture::unbind()
 {
         glBindTexture(m.target, 0);
 }
 
-void texture::generate_mipmap()
+void Texture::generate_mipmap()
 {
         glGenerateTextureMipmap(m.texture);
 }
 
 
-int texture::get_target_dims()
+int Texture::get_target_dims()
 {
         switch(m.target)
         {
@@ -67,7 +67,7 @@ int texture::get_target_dims()
         }
 }
 
-void texture::genTexImage(const void* pixels)
+void Texture::genTexImage(const void* pixels)
 {
         switch(get_target_dims())
         {
@@ -85,7 +85,7 @@ void texture::genTexImage(const void* pixels)
 
 #include <cassert>
 
-void texture::genTexImageMS(int MS)
+void Texture::genTexImageMS(int MS)
 {
         switch(get_target_dims())
         {
@@ -103,32 +103,32 @@ void texture::genTexImageMS(int MS)
 }
 
 
-void texture::genTexImage_cubemap(int side, const void* pixels)
+void Texture::genTexImage_cubemap(int side, const void* pixels)
 {
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + side, 0, m.internal_format, m.width, m.height, 0, m.format, m.type, pixels);
 }
 
-void texture::genTexImage_layer(int layer, const void* pixels)
+void Texture::genTexImage_layer(int layer, const void* pixels)
 {
         glTexSubImage3D(m.target, 0,0,0,layer,m.width,m.height,1,m.format,m.type,pixels);
 }
 
 
 
-void texture::setTexParameter(unsigned int parameter, int value)
+void Texture::setTexParameter(unsigned int parameter, int value)
 {
         glTexParameteri(m.target, parameter, value);
 }
-void texture::setTexParameter(unsigned int parameter, float value)
+void Texture::setTexParameter(unsigned int parameter, float value)
 {
         glTexParameterf(m.target, parameter, value);
 }
 
-void texture::setTexParameter(unsigned int parameter, const float *value)
+void Texture::setTexParameter(unsigned int parameter, const float *value)
 {
         glTexParameterfv(m.target, parameter, value);
 }
-void texture::setTexParameter(unsigned int parameter, const int *value)
+void Texture::setTexParameter(unsigned int parameter, const int *value)
 {
         glTexParameteriv(m.target, parameter, value);
 }

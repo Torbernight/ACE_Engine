@@ -4,7 +4,7 @@
 #include <glm/vec3.hpp> 
 #include <glm/vec4.hpp> 
 
-struct light
+struct Light
 {
     glm::vec3 position;
     glm::vec3 direction;

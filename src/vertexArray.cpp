@@ -19,7 +19,7 @@ void vertexArray::generateVAO()
     glGenVertexArrays(1, &m.VAO);
 }
 
-void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t stride)
+void vertexArray::setVertexAttributes(const Buffer &B, size_t offset, size_t stride)
 {
     bind();
 
@@ -58,7 +58,7 @@ void vertexArray::setVertexAttributes(const buffer &B, size_t offset, size_t str
     unbind();
 }
 
-void vertexArray::setVertexAttributes(buffer &B)
+void vertexArray::setVertexAttributes(Buffer &B)
 {
     bind();
 

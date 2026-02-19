@@ -17,10 +17,10 @@
 #define GL_UNIFORM_BUFFER 0x8A11
 
 
-class mesh
+class Mesh
 {
     public:
-    struct vertex
+    struct Vertex
     {
         glm::vec3 position;
         glm::vec2 texcoord;
@@ -28,7 +28,7 @@ class mesh
         glm::vec3 tangent;
         glm::vec3 bitangent;
 
-        bool operator==(const vertex& V) const
+        bool operator==(const Vertex& V) const
         {
             return
             position == V.position &&
@@ -41,14 +41,14 @@ class mesh
     
     struct members
     {
-        std::string Name;
+        std::string name;
         vertexArray VAO;
-        buffer VBO;
-        buffer EBO;
-        std::vector<vertex> vertices;
+        Buffer VBO;
+        Buffer EBO;
+        std::vector<Vertex> vertices;
         std::vector<unsigned int> indices;
         AABB bounding_box;
-        glm::mat4 lastFrame_Transform = glm::mat4(1.0f);
+        glm::mat4 lastFrameTransform = glm::mat4(1.0f);
         glm::mat4 transform;
         bool visible = true;
         unsigned int materialIndex = 0;
@@ -56,11 +56,11 @@ class mesh
 
         members():
         VAO({
-            {0, 3 , GL_FLOAT, 0, sizeof(vertex), 0},
-            {1, 2 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, texcoord)},
-            {2, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, normal)},
-            {3, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, tangent)},
-            {4, 3 , GL_FLOAT, 0, sizeof(vertex), offsetof(vertex, bitangent)}
+            {0, 3 , GL_FLOAT, 0, sizeof(Vertex), 0},
+            {1, 2 , GL_FLOAT, 0, sizeof(Vertex), offsetof(Vertex, texcoord)},
+            {2, 3 , GL_FLOAT, 0, sizeof(Vertex), offsetof(Vertex, normal)},
+            {3, 3 , GL_FLOAT, 0, sizeof(Vertex), offsetof(Vertex, tangent)},
+            {4, 3 , GL_FLOAT, 0, sizeof(Vertex), offsetof(Vertex, bitangent)}
             }), 
         
         VBO(GL_ARRAY_BUFFER), EBO(GL_ELEMENT_ARRAY_BUFFER)
@@ -73,9 +73,9 @@ class mesh
     void compute_AABB();
 
     void onFrustum(const frustum& F);
-    bool isInstance(const mesh& M) const;
+    bool isInstance(const Mesh& M) const;
 
-    bool operator==(const mesh& M) const 
+    bool operator==(const Mesh& M) const 
     {
         return isInstance(M); 
     }

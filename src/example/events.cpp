@@ -4,7 +4,7 @@
 
 #include "example.hpp"
 
-void MyGame::process_events()
+void MyGame::processEvents()
 {
     SDL_Event E;
     while (SDL_PollEvent(&E))
@@ -32,8 +32,8 @@ void MyGame::process_events()
             }
             if (E.button.button == SDL_BUTTON_LEFT) {
                 uint8_t click = E.type == SDL_MOUSEBUTTONDOWN;
-                player.movement.hasClicked = player.movement.lclick != click && click;
-                player.movement.lclick = click;
+                player.Input.hasClicked = player.Input.lclick != click && click;
+                player.Input.lclick = click;
             }
             break;
             case SDL_MOUSEWHEEL:
@@ -61,7 +61,7 @@ void MyGame::process_events()
     SDL_SetRelativeMouseMode((SDL_bool)(!escape));
 }
 
-void MyGame::process_Mousewheel(const SDL_MouseWheelEvent& E)
+void MyGame::processMouseWheel(const SDL_MouseWheelEvent& E)
 {
     float FOV = glm::radians(glm::degrees(player.getFOV())+E.y);
     player.setFOV(glm::clamp(FOV,0.0f, M_PIf));
@@ -73,7 +73,7 @@ void MyGame::processWindowEvents(const SDL_WindowEvent &E)
     switch(E.event)
     {
         case SDL_WINDOWEVENT_RESIZED:
-            resize_window(E.data1, E.data2);
+            resizeWindow(E.data1, E.data2);
             break;
         case SDL_WINDOWEVENT_HIDDEN:
             pause_rendering = true;
@@ -97,39 +97,39 @@ void MyGame::processKeyEvents(const SDL_KeyboardEvent &E)
     {
         case SDLK_w:
         case SDLK_UP:
-            player.movement.forward = pressed;
+            player.Input.forward = pressed;
             break;
 
         case SDLK_s:
         case SDLK_DOWN:
-            player.movement.backward = pressed;
+            player.Input.backward = pressed;
             break;
 
         case SDLK_d:
         case SDLK_RIGHT:
-            player.movement.right = pressed;
+            player.Input.right = pressed;
             break;
 
         case SDLK_a:
         case SDLK_LEFT:
-            player.movement.left = pressed;
+            player.Input.left = pressed;
             break;
 
         case SDLK_SPACE:
-            player.movement.up = pressed;
+            player.Input.up = pressed;
             break;
 
         case SDLK_LCTRL:
-            player.movement.down = pressed;
+            player.Input.down = pressed;
             break;
         
         case SDLK_LSHIFT:
-            player.movement.sprint = pressed;
+            player.Input.sprint = pressed;
             break;
 
         case SDLK_e:
-            player.movement.use = !player.movement.use_key && pressed;
-            player.movement.use_key = pressed;
+            player.Input.use = !player.Input.use_key && pressed;
+            player.Input.use_key = pressed;
             break;
 
         case SDLK_ESCAPE:

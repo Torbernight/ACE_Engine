@@ -6,7 +6,7 @@
 #include "misc/scene_aux.hpp"
 #include "shader_compiler.hpp"
 
-void scene::combine_as_instance(mesh& A, mesh& Instance)
+void Scene::combine_as_instance(Mesh& A, Mesh& Instance)
 {
     //A.m.nInstances += Instance.m.nInstances;
     //for (int n = 0; n < Instance.m.nInstances; n++)
@@ -16,9 +16,9 @@ void scene::combine_as_instance(mesh& A, mesh& Instance)
     //Instance.m.discard = true;
 }
 
-void scene::combine_meshes(mesh& A, mesh& B)
+void Scene::combine_meshes(Mesh& A, Mesh& B)
 {
-    mesh AB;
+    Mesh AB;
     A.apply_transform();
     B.apply_transform();
     AB.m.bounding_box = AABB(A.m.bounding_box,B.m.bounding_box);
@@ -33,28 +33,28 @@ void scene::combine_meshes(mesh& A, mesh& B)
         AB.m.indices.push_back(I+A.m.vertices.size());
 
     AB.m.materialIndex = A.m.materialIndex;
-    AB.m.Name = A.m.Name;
+    AB.m.name = A.m.name;
     AB.m.transform = glm::mat4(1.0f);
     AB.join_identical_vertices();
     B.m.discard = true;
     A = AB;
 }
 
-mesh scene::process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform)
+Mesh Scene::process_mesh(const aiMesh* mesh, const aiMatrix4x4& transform)
 {
-    mesh M;
-    M.m.Name = Mesh->mName.C_Str();
+    Mesh M;
+    M.m.name = mesh->mName.C_Str();
 
-    M.m.vertices.reserve(Mesh->mNumVertices);
-    M.m.indices.reserve(Mesh->mNumFaces*3);
+    M.m.vertices.reserve(mesh->mNumVertices);
+    M.m.indices.reserve(mesh->mNumFaces*3);
 
-    std::thread Tfaces(process_faces, Mesh, &M.m.indices);
-    std::thread Tverts(process_vertices, Mesh, &M.m.vertices);
+    std::thread Tfaces(process_faces, mesh, &M.m.indices);
+    std::thread Tverts(process_vertices, mesh, &M.m.vertices);
 
-    M.m.bounding_box.max = cast3D(Mesh->mAABB.mMax);
-    M.m.bounding_box.min = cast3D(Mesh->mAABB.mMin);
-    M.m.transform = cast4x4(Transform);
-    M.m.materialIndex = Mesh->mMaterialIndex;
+    M.m.bounding_box.max = cast3D(mesh->mAABB.mMax);
+    M.m.bounding_box.min = cast3D(mesh->mAABB.mMin);
+    M.m.transform = cast4x4(transform);
+    M.m.materialIndex = mesh->mMaterialIndex;
 
     Tfaces.join();
     Tverts.join();
@@ -110,7 +110,7 @@ void process_metadata(const aiMetadata *Metadata, int level = 0)
     }
 }
 
-void scene::process_node(const aiNode* Node, const aiScene* Scene)
+void Scene::process_node(const aiNode* Node, const aiScene* Scene)
 {
     bool grabbable = false;
     bool mesh_static = true;
@@ -125,9 +125,9 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene)
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
         if (mesh_static){
-            static_objects.push_back(static_object(index));
+            static_objects.push_back(StaticObject(index));
         } else if (grabbable) {
-            dynamic_objects.push_back(dynamic_object(index));
+            dynamic_objects.push_back(DynamicObject(index));
         }
     }
 
@@ -136,7 +136,7 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene)
 }
 #undef XYZ
 
-void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform)
+void Scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform)
 {
     bool grabbable = false;
     bool mesh_static = true;
@@ -151,9 +151,9 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
         unsigned int index = Node->mMeshes[n];
         Meshes.push_back(process_mesh(Scene->mMeshes[index], Transform));
         if (mesh_static){
-            static_objects.push_back(static_object(index));
+            static_objects.push_back(StaticObject(index));
         } else if (grabbable) {
-            dynamic_objects.push_back(dynamic_object(index));
+            dynamic_objects.push_back(DynamicObject(index));
         }
     }
 
@@ -161,41 +161,41 @@ void scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatri
         process_node(Node->mChildren[n], Scene, Node->mTransformation);
 }
 
-void scene::find_instances()
+void Scene::find_instances()
 {
     auto it = Meshes.begin();
-    auto find_inst = [&it](mesh& M){return *it == M && !M.m.discard;};
+    auto find_inst = [&it](Mesh& M){return *it == M && !M.m.discard;};
     for(; it < Meshes.end(); it++)
     {
         auto res = it;
         while((res = std::find_if(it+1, Meshes.end(), find_inst)) != Meshes.end())
         {
-            scene::combine_as_instance(*it, *res);
+            Scene::combine_as_instance(*it, *res);
         }
     }
 }
-void scene::find_batchable()
+void Scene::find_batchable()
 {
     auto it = Meshes.begin();
-    auto find_batch = [&it](mesh& M){return it->m.materialIndex == M.m.materialIndex && !M.m.discard;};
+    auto find_batch = [&it](Mesh& M){return it->m.materialIndex == M.m.materialIndex && !M.m.discard;};
     for(; it < Meshes.end(); it++)
     {
         auto res = it;
         while((res = std::find_if(it+1, Meshes.end(), find_batch)) != Meshes.end())
         {
-            scene::combine_meshes(*it, *res);
+            Scene::combine_meshes(*it, *res);
         }
     }
 }
 
-void scene::load_camera(const aiScene* S)
+void Scene::load_camera(const aiScene* S)
 {
     if(S->HasCameras())
     {
         const auto& aiCam = *S->mCameras[0];
         aiMatrix4x4 Transform = getTransform(aiCam.mName, S);
         aiMatrix3x3 vTransform = aiMatrix3x3(Transform);
-        camera::members& cam = m.defaultCamera.m;
+        Camera::members& cam = m.defaultCamera.m;
         cam.pos = cast3D(Transform * aiCam.mPosition);
         cam.zNear = aiCam.mClipPlaneNear;
         cam.zFar = aiCam.mClipPlaneFar;
@@ -210,7 +210,7 @@ void scene::load_camera(const aiScene* S)
     }
 }
 
-void scene::load_lights(const aiScene* S)
+void Scene::load_lights(const aiScene* S)
 {
     unsigned int nLights = S->mNumLights;
     this->m.init_constants.push_back(nLights);
@@ -231,7 +231,7 @@ void scene::load_lights(const aiScene* S)
     }
 }
 
-void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat)
+void Scene::getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, MaterialBuffer& matBuff, Material& Mat)
 {
     int* texture = nullptr;
     Material::Texture_Index Index;
@@ -267,13 +267,13 @@ void scene::getTexture(aiTextureType Type, const path& parentPath, const aiMater
     }
 }
 
-void scene::load_materials(const aiScene* S, const path& pFile)
+void Scene::load_materials(const aiScene* S, const path& pFile)
 {
     unsigned int nMats = S->mNumMaterials;
     path parentPath = pFile.parent_path();
     for(int n = 0; n < nMats; n++){
         const aiMaterial *M = S->mMaterials[n];
-        material_buffer matBuff;
+        MaterialBuffer matBuff;
         Material Mat;
 
         getTexture(aiTextureType_BASE_COLOR, parentPath, M, matBuff, Mat);
@@ -287,17 +287,17 @@ void scene::load_materials(const aiScene* S, const path& pFile)
     }
 }
 
-void scene::clean_meshes()
+void Scene::clean_meshes()
 {
-    Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](mesh& m){return m.m.discard;}), Meshes.end());
+    Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](Mesh& m){return m.m.discard;}), Meshes.end());
 }
 
-void scene::set_max_instances()
+void Scene::set_max_instances()
 {
     m.max_instances = 1;
 }
 
-scene* scene::import_scene(const path& pFile) 
+Scene* Scene::import_scene(const path& pFile) 
 {
     Assimp::Importer importer;
 
@@ -308,27 +308,27 @@ scene* scene::import_scene(const path& pFile)
         return nullptr;
     }
 
-    scene *Scene = new scene;
+    Scene *scene = new Scene;
 
-    Scene->load_lights(S);
+    scene->load_lights(S);
 
-    Scene->load_materials(S, pFile);
+    scene->load_materials(S, pFile);
 
-    Scene->load_camera(S);
+    scene->load_camera(S);
 
-    Scene->Meshes.reserve(S->mRootNode->mNumMeshes);
+    scene->Meshes.reserve(S->mRootNode->mNumMeshes);
 
-    Scene->process_node(S->mRootNode, S);
+    scene->process_node(S->mRootNode, S);
 
     //Scene->find_instances();
     //Scene->find_batchable();
     //Scene->clean_meshes();
 
-    Scene->set_max_instances();
+    scene->set_max_instances();
 
-    for (static_object &obj: Scene->static_objects)
+    for (StaticObject &obj: scene->static_objects)
     {
-        auto &Mesh = Scene->Meshes[obj.m.Mesh];
+        auto &Mesh = scene->Meshes[obj.m.Mesh];
         for(int n = 0; n < Mesh.m.indices.size()/3; n++)
         {
             unsigned int A = Mesh.m.indices[n*3];
@@ -342,17 +342,17 @@ scene* scene::import_scene(const path& pFile)
         }
     }
 
-    for(auto &Obj : Scene->static_objects){
-        Scene->objects.push_back(&Obj);
+    for(auto &Obj : scene->static_objects){
+        scene->objects.push_back(&Obj);
     }
-    for(auto& Obj : Scene->dynamic_objects){
-        Scene->objects.push_back(&Obj);
+    for(auto& Obj : scene->dynamic_objects){
+        scene->objects.push_back(&Obj);
     }
 
-    return Scene;
+    return scene;
 }
 
-void scene::reload_DeferredShader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
+void Scene::reload_DeferredShader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
 {
     shader_source src;
     Shader *S = nullptr;
@@ -376,7 +376,7 @@ void scene::reload_DeferredShader(ShaderStage stage, const std::vector<std::stri
     m.sProgram.attachShader(*S);
     m.sProgram.linkProgram();
 }
-void scene::reload_DeferredShader(ShaderStage stage)
+void Scene::reload_DeferredShader(ShaderStage stage)
 {
     shader_source src;
     Shader *S = nullptr;
@@ -397,7 +397,7 @@ void scene::reload_DeferredShader(ShaderStage stage)
     m.sProgram.linkProgram();
 }
 
-void scene::load_DeferredShader(const path& vertex, const path& fragment)
+void Scene::load_DeferredShader(const path& vertex, const path& fragment)
 {
     m.deferred_vShader = vertex;
     m.deferred_fShader = fragment;
@@ -419,19 +419,19 @@ void scene::load_DeferredShader(const path& vertex, const path& fragment)
     m.sProgram.linkProgram();
 }
 
-void scene::updatePostProcessBuffer()
+void Scene::updatePostProcessBuffer()
 {
     m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
 }
 
-void scene::setUBO()
+void Scene::setUBO()
 {
     m.UBO.generate();
-    m.UBO.bufferData(Lights.size()*sizeof(light), Lights.data(), GL_DYNAMIC_DRAW);
+    m.UBO.bufferData(Lights.size()*sizeof(Light), Lights.data(), GL_DYNAMIC_DRAW);
     m.UBO.bindBufferBase(2);
 
     m.mBuffer.generate();
-    m.mBuffer.bufferData(sizeof(material_buffer), nullptr, GL_DYNAMIC_DRAW);
+    m.mBuffer.bufferData(sizeof(MaterialBuffer), nullptr, GL_DYNAMIC_DRAW);
     m.mBuffer.bindBufferBase(3);
 
     m.postProcess_buffer.generate();
@@ -439,20 +439,20 @@ void scene::setUBO()
     m.postProcess_buffer.bindBufferBase(4);
 }
 
-void scene::render_static_objects(buffer &Transform_Buffer, size_t transform_offset)
+void Scene::render_static_objects(Buffer &Transform_Buffer, size_t transform_offset)
 {
     for (auto &Obj : static_objects)
     {
         auto& M = Meshes[Obj.m.Mesh];
         if (!M.m.visible)
             continue;
-        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
+        m.mBuffer.bufferSubData(sizeof(MaterialBuffer), 0, &m.Materials[M.m.materialIndex]);
         Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
         M.render();
     }
 }
 
-void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_offset)
+void Scene::render_dynamic_objects(Buffer &Transform_Buffer, size_t transform_offset)
 {
     for (auto &Obj : dynamic_objects)
     {
@@ -468,17 +468,17 @@ void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_of
             m.Materials[M.m.materialIndex].alpha = 1.0f;
         }
 
-        m.mBuffer.bufferSubData(sizeof(material_buffer), 0, &m.Materials[M.m.materialIndex]);
+        m.mBuffer.bufferSubData(sizeof(MaterialBuffer), 0, &m.Materials[M.m.materialIndex]);
         if (Obj.m_selected)
         {
             glCullFace(GL_FRONT);
             int glow = 1;
-            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            m.mBuffer.bufferSubData(4UL, offsetof(MaterialBuffer, glow), &glow);
             glm::mat4 T = glm::scale(M.m.transform, glm::vec3(1.1f));
             Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &T);
             M.render();
             glow = 0;
-            m.mBuffer.bufferSubData(4UL, offsetof(material_buffer, glow), &glow);
+            m.mBuffer.bufferSubData(4UL, offsetof(MaterialBuffer, glow), &glow);
             glCullFace(GL_BACK);
         }
         Transform_Buffer.bufferSubData(sizeof(glm::mat4), transform_offset, &M.m.transform);
@@ -486,15 +486,15 @@ void scene::render_dynamic_objects(buffer &Transform_Buffer, size_t transform_of
     }
 }
 
-void scene::render_postprocess()
+void Scene::render_postprocess()
 {
-    framebuffer::unbind();
+    Framebuffer::unbind();
     m.PostProcRenderer.use_shader();
     m.DRenderer.set_viewport();
     m.PostProcRenderer.render();
 }
 
-void scene::render_deferred()
+void Scene::render_deferred()
 {
     m.PostProcRenderer.bind_framebuffer();
     m.sProgram.use();
@@ -502,13 +502,13 @@ void scene::render_deferred()
     m.DRenderer.render();
 }
 
-void scene::bind_materials()
+void Scene::bind_materials()
 {
     for(auto& M : Materials)
         M.bind();
 }
 
-void scene::render_skybox()
+void Scene::render_skybox()
 {
     if (!m.skybox)
         return;
@@ -518,7 +518,7 @@ void scene::render_skybox()
     m.skybox.render();
 }
 
-void scene::render(buffer &Transform_Buffer, size_t transform_offset)
+void Scene::render(Buffer &Transform_Buffer, size_t transform_offset)
 {
     m.DRenderer.bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -530,23 +530,23 @@ void scene::render(buffer &Transform_Buffer, size_t transform_offset)
     render_postprocess();
 }
 
-void scene::initSkybox(const path& vertex, const path& fragment, const path& skybox)
+void Scene::initSkybox(const path& vertex, const path& fragment, const path& skybox)
 {
     m.skybox.init(vertex, fragment, 512, 512, skybox);
 }
 
-void scene::initMeshes()
+void Scene::initMeshes()
 {
     for(auto& M : Meshes)
         M.init();
 }
 
-void scene::initDRenderer(int w, int h, int MSAA)
+void Scene::initDRenderer(int w, int h, int MSAA)
 {
     m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, m.Materials.size()*4, w, h, MSAA);
     m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w,h);
 }
-void scene::initDRenderer(int w, int h)
+void Scene::initDRenderer(int w, int h)
 {
     m.DRenderer.initDeferred(m.scene_vShader, m.scene_fShader, m.Materials.size()*4, w, h);
     m.PostProcRenderer.initPostProc(m.postProcess_vShader, m.postProcess_fShader, w,h);

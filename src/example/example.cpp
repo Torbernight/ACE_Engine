@@ -6,7 +6,7 @@
 
 #include "example.hpp"
 
-void MyGame::init_imgui()
+void MyGame::initImGui()
 {
     ImGui::CreateContext();
     ImGui_ImplSDL2_InitForOpenGL(this->win.getHandle(), this->win.getContext());
@@ -14,7 +14,7 @@ void MyGame::init_imgui()
     imgui_IO = &ImGui::GetIO();
 }
 
-void MyGame::init_gl_parameters()
+void MyGame::initGLParameters()
 {
 #   ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -31,7 +31,7 @@ void MyGame::init_gl_parameters()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
-void MyGame::init_audio()
+void MyGame::initAudio()
 {
     if (Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 2048) < 0) {
         SDL_Log("Couldn't open audio: %s\n", SDL_GetError());
@@ -46,7 +46,7 @@ void MyGame::init_audio()
     }
 }
 
-void MyGame::init_sdl_parameters()
+void MyGame::initSDLParameters()
 {
     SDL_SetRelativeMouseMode(SDL_TRUE);
     SDL_GL_SetSwapInterval(vsync);
@@ -54,12 +54,12 @@ void MyGame::init_sdl_parameters()
 
 void MyGame::init()
 {
-    init_sdl_parameters();
-    init_gl_parameters();
-    init_imgui();
-    init_audio();
+    initSDLParameters();
+    initGLParameters();
+    initImGui();
+    initAudio();
 
-    gameScene = scene::import_scene("assets/garden.gltf");
+    gameScene = Scene::import_scene("assets/garden.gltf");
     if (!gameScene){
         win.set_shouldClose(true);
         return;
@@ -85,15 +85,15 @@ void MyGame::init()
     TransformBuffer.bufferSubData(sizeof(glm::mat4), 0, &player.getProj()[0][0]);
     TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView()[0][0]);
     Camera_Buffer.generate();
-    Camera_Buffer.bufferData(sizeof(camera_UBO), nullptr, GL_DYNAMIC_DRAW);
+    Camera_Buffer.bufferData(sizeof(CameraUBO), nullptr, GL_DYNAMIC_DRAW);
     Camera_Buffer.bindBufferBase(1);
-    state_UBO buff = {};
+    StateUBO buff = {};
     State_Buffer.generate();
-    State_Buffer.bufferData(sizeof(state_UBO), &buff, GL_DYNAMIC_DRAW);
+    State_Buffer.bufferData(sizeof(StateUBO), &buff, GL_DYNAMIC_DRAW);
     State_Buffer.bindBufferBase(5);
 }
 
-void MyGame::resize_window(int w, int h)
+void MyGame::resizeWindow(int w, int h)
 {
     win.set_size(w, h);
     gameScene->resizeViewport(w,h);
@@ -111,39 +111,39 @@ void MyGame::setVSync()
         SDL_GL_SetSwapInterval(vsync ? 1 : 0);
 }
 
-void MyGame::update_UBOs()
+void MyGame::updateUniformBuffers()
 {
-    camera_UBO camBuff = {glm::vec4(player.getPos(), 0), glm::vec4(player.getFront(), 0), player.getNear(), player.getFar()};
+    CameraUBO camBuff = {glm::vec4(player.getPos(), 0), glm::vec4(player.getFront(), 0), player.getNear(), player.getFar()};
     Camera_Buffer.bufferSubData(sizeof(camBuff), 0, &camBuff);
     TransformBuffer.bufferSubData(sizeof(glm::mat4), sizeof(glm::mat4), &player.getView());
-    state_UBO stateBuff = {frame, runtime, dt, {win.getWidth(), win.getHeight()}};
+    StateUBO stateBuff = {frame, runtime, dt, {win.getWidth(), win.getHeight()}};
     State_Buffer.bufferSubData(sizeof(stateBuff), 0, &stateBuff);
 }
 
-void MyGame::test_collision()
+void MyGame::testCollision()
 {
     test_player_collision(player, gameScene, tick_rate);
     test_object_collision(gameScene, tick_rate);
 }
 
-bool MyGame::meshIntersects(const mesh& M)
+bool MyGame::meshIntersects(const Mesh& M)
 {
     glm::vec2 intersection = (M.m.bounding_box*M.m.transform).ray_intersection(player.getPos(), player.getFront());
     return intersection.x <= intersection.y && intersection.x <= 3.0f;
 }
 
-dynamic_object* MyGame::select_object()
+DynamicObject* MyGame::selectObject()
 {
     float dist = FLT_MAX;
     float closest_static = FLT_MAX;
-    dynamic_object *M = nullptr;
-    for(object *Obj : gameScene->objects){
+    DynamicObject *M = nullptr;
+    for(Object *Obj : gameScene->objects){
         if (Obj->m_grabbed)
             continue;
-        mesh &Mesh = gameScene->Meshes[Obj->m.Mesh];
+        Mesh &Mesh = gameScene->Meshes[Obj->m.Mesh];
         float d = glm::distance(player.m.pos, (Mesh.m.bounding_box*Mesh.m.transform).get_center());
         
-        if(dynamic_cast<dynamic_object*>(Obj) == nullptr){
+        if(dynamic_cast<DynamicObject*>(Obj) == nullptr){
             closest_static = d < closest_static ? d : closest_static; 
             continue;
         }
@@ -151,7 +151,7 @@ dynamic_object* MyGame::select_object()
         bool closest = d < dist;
         dist = closest ? d : dist;
         if (closest){
-            M = dynamic_cast<dynamic_object*>(Obj);
+            M = dynamic_cast<DynamicObject*>(Obj);
         }
     }
     return closest_static < dist ? nullptr : M;
@@ -171,34 +171,34 @@ dynamic_object* MyGame::select_object()
     */
 }
 
-void MyGame::update_physics()
+void MyGame::updatePhysics()
 {
     for (auto &Obj : gameScene->dynamic_objects) 
         Obj.update(&player, gameScene, tick_rate);
 
-    test_collision();
+    testCollision();
 
     if (player.has_grabbed_object())
         player.m.grabbed_object->update_grabbed(&player, gameScene);
 
 }
 
-void MyGame::point_object()
+void MyGame::pointObject()
 {
-    dynamic_object* object = player.m.pointed_object;
+    DynamicObject* object = player.m.pointed_object;
 
     if (object)
         return;
 
-    if ((object = select_object()))
+    if ((object = selectObject()))
         object->m_selected = true;
 
     player.m.pointed_object = object;
 }
 
-void MyGame::use_object()
+void MyGame::useObject()
 {
-    dynamic_object* grabbed = player.m.grabbed_object; 
+    DynamicObject* grabbed = player.m.grabbed_object; 
     if (!grabbed){
         if ((grabbed = player.m.pointed_object)){
             grabbed->grab(&player);
@@ -208,19 +208,19 @@ void MyGame::use_object()
     grabbed->use(&player);
 }
 
-void MyGame::check_selectable_object()
+void MyGame::checkSelectableObject()
 {
-    point_object();
-    if (player.movement.use)
-        use_object();
+    pointObject();
+    if (player.Input.use)
+        useObject();
 }
 
-void MyGame::check_on_frustum()
+void MyGame::frustumTest()
 {
-    std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(), [this](mesh& M){M.onFrustum(player.m.view_frustum);});
+    std::for_each(std::execution::par, gameScene->Meshes.begin(), gameScene->Meshes.end(), [this](Mesh& M){M.onFrustum(player.m.view_frustum);});
 }
 
-void MyGame::update_gameLogic()
+void MyGame::updateGameLogic()
 {
     static float accumulated = 0.0f;
     accumulated += dt;
@@ -228,15 +228,15 @@ void MyGame::update_gameLogic()
     while (accumulated >= tick_rate)
     {
         player.reset_rotation();
-        process_events();
+        processEvents();
         
         if (escape)
             goto skipLoop;
         
-        check_selectable_object();
+        checkSelectableObject();
         player.move(tick_rate);
         player.rotate(tick_rate);
-        update_physics();
+        updatePhysics();
         if (player.should_sound_footstep() && !Mix_Playing(0))
             Mix_PlayChannel(0, footsteps_wave, 0);
 
@@ -248,18 +248,18 @@ skipLoop:
     }
 
     player.makeView();
-    check_on_frustum();
+    frustumTest();
 }
 
 void MyGame::startFrame()
 {
     frame_timer.Start();
-    imgui_frame_start();
+    imguiFrameStart();
 }
 
 void MyGame::endFrame()
 {
-    imgui_frame_end();
+    imguiFrameEnd();
     win.swapBuffer();
     frame++;
     runtime += (dt = frame_timer.Count());
@@ -276,19 +276,19 @@ void MyGame::mainLoop()
     {
         startFrame();
 
-        update_gameLogic();
+        updateGameLogic();
 
         if(escape)
-            show_config();
+            showConfig();
 
-        info_window();
+        infoWindow();
         
         if (pause_rendering) {
             end_norender();
             continue;
         }
 
-        update_UBOs();
+        updateUniformBuffers();
 
         gameScene->render(TransformBuffer, 2*sizeof(glm::mat4));
 

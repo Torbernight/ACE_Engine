@@ -4,7 +4,7 @@
 
 #include "application.hpp"
 
-void application::m_init()
+void Application::m_init()
 {
     glewExperimental = GL_TRUE;
     int status = glewInit();
@@ -14,23 +14,23 @@ void application::m_init()
     glClearColor(0.3, 0.5, 0.4, 1.0);
 }
 
-application::application(const std::string_view& title, int window_w, int window_h)
+Application::Application(const std::string_view& title, int window_w, int window_h)
 : win(title, window_w, window_h, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED)
 {
     m_init();
 }
-application::application(const std::string_view& title, int window_w, int window_h, int flags)
+Application::Application(const std::string_view& title, int window_w, int window_h, int flags)
 : win(title, window_w, window_h, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, flags)
 {
     m_init();
 }
-application::application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy, int flags)
+Application::Application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy, int flags)
 : win(title, window_w, window_h, window_posx, window_posy, flags)
 {
     m_init();
 }
 
-application::application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy)
+Application::Application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy)
 : win(title, window_w, window_h, window_posx, window_posy)
 {
     m_init();

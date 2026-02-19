@@ -8,27 +8,27 @@ glm::vec3 move2D(const glm::vec3& v)
     return glm::normalize(glm::vec3(v.x, 0.0f, v.z));
 }
 
-void camera::makeProj()
+void Camera::makeProj()
 {
     m.proj = glm::perspective(m.FOVy, m.aspect, m.zNear, m.zFar);
     m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
-float camera::footstep_offset() const
+float Camera::footstep_offset() const
 {
     return std::sin(M_PIf*m.footstep_freq*m.footstep_timer)*m.footstep_amp;
 }
 
-void camera::move(float dt)
+void Camera::move(float dt)
 {
     using namespace glm;
 
     m.acc = 
-    (float)(movement.forward-movement.backward)*move2D(m.front)
+    (float)(Input.forward-Input.backward)*move2D(m.front)
     + 
-    (float)(movement.right-movement.left)*move2D(m.right)
+    (float)(Input.right-Input.left)*move2D(m.right)
     + 
-    (float)(movement.up-movement.down)*world_up;
+    (float)(Input.up-Input.down)*world_up;
 
     m.acc *= float(m.floor_collision);
 
@@ -66,7 +66,7 @@ void camera::move(float dt)
 
     m.vel += m.acc*dt;
     float speed = length(vec2(m.vel.x, m.vel.z));
-    float speedcap = mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
+    float speedcap = mix(s_walk_speed, s_sprint_speed, (float)Input.sprint);
     m.footstep_freq = speedcap;
 
     if (speed > speedcap){
@@ -80,14 +80,14 @@ void camera::move(float dt)
     make_AABB();
 }
 
-void camera::make_AABB()
+void Camera::make_AABB()
 {
     glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.845f, m.pos.z);
     glm::vec3 bbounds = glm::vec3(0.25f, 0.845f, 0.25f);
     this->m.bounding_box = AABB(bcenter-bbounds, bcenter+bbounds);
 }
 
-void camera::makeView()
+void Camera::makeView()
 {
     glm::vec3 P = m.pos;
     P.y += footstep_offset();
@@ -95,7 +95,7 @@ void camera::makeView()
     m.view_frustum.create(P, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
-glm::mat4 camera::get_transform() const
+glm::mat4 Camera::get_transform() const
 {
     return glm::mat4(
         m.right.x, m.right.y, m.right.z, 0.0f,
@@ -105,7 +105,7 @@ glm::mat4 camera::get_transform() const
     );
 }
 
-void camera::rotate(float dt)
+void Camera::rotate(float dt)
 {
     m.rotation += m.delta_rotation*dt;
 

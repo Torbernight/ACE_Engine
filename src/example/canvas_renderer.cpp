@@ -1,25 +1,25 @@
 #include <GL/glew.h>
 #include "canvas_renderer.hpp"
 
-void canvas_renderer::bind()
+void CanvasRenderer::bind()
 {
         m.FB.bind();
         m.sProgram.use();
 }
 
-void canvas_renderer::bind(shaderProgram &S)
+void CanvasRenderer::bind(shaderProgram &S)
 {
         m.FB.bind();
         S.use();
 }
 
-void canvas_renderer::unbind()
+void CanvasRenderer::unbind()
 {
         m.FB.unbind();
         m.sProgram.unuse();
 }
 
-void canvas_renderer::render()
+void CanvasRenderer::render()
 {
         m.FB.bindTextures();
         glDisable(GL_DEPTH_TEST);
@@ -30,13 +30,13 @@ void canvas_renderer::render()
         glEnable(GL_DEPTH_TEST);
 }
 
-void canvas_renderer::set_viewport()
+void CanvasRenderer::set_viewport()
 {
         glViewport(0,0,m.w,m.h);
 }
 
 
-void canvas_renderer::initVAO()
+void CanvasRenderer::initVAO()
 {
         const float vertices[24] = 
         {
@@ -57,7 +57,7 @@ void canvas_renderer::initVAO()
         m.VAO.unbind();
 }
 
-void canvas_renderer::initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h)
+void CanvasRenderer::initPostProc(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h)
 {
         m.vShader_Path = vShader;
         m.fShader_Path = fShader;
@@ -78,7 +78,7 @@ void canvas_renderer::initPostProc(const std::filesystem::path& vShader, const s
         });
 }
 
-void canvas_renderer::initFBO(int w, int h, std::initializer_list<texture::texture_parameters>&& Attachments)
+void CanvasRenderer::initFBO(int w, int h, std::initializer_list<Texture::TextureParameters>&& Attachments)
 {
         m.w = w;
         m.h = h;
@@ -95,7 +95,7 @@ void canvas_renderer::initFBO(int w, int h, std::initializer_list<texture::textu
         m.FB.setup();
        
 }
-void canvas_renderer::recompile_shader(ShaderStage stage)
+void CanvasRenderer::recompile_shader(ShaderStage stage)
 {
         shader_source src;
         Shader *S = nullptr;
@@ -114,7 +114,7 @@ void canvas_renderer::recompile_shader(ShaderStage stage)
         m.sProgram.linkProgram();
 }
 
-void canvas_renderer::recompile_shader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
+void CanvasRenderer::recompile_shader(ShaderStage stage, const std::vector<std::string>& preprocessor_constants)
 {
         shader_source src;
         Shader *S = nullptr;
@@ -138,7 +138,7 @@ void canvas_renderer::recompile_shader(ShaderStage stage, const std::vector<std:
         m.sProgram.linkProgram();
 }
 
-void canvas_renderer::initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h, int MSAA)
+void CanvasRenderer::initDeferred(const std::filesystem::path& vShader, const std::filesystem::path& fShader, unsigned int nMaterials, int w, int h, int MSAA)
 {
         m.vShader_Path = vShader;
         m.fShader_Path = fShader;

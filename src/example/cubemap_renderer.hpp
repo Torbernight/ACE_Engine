@@ -5,7 +5,7 @@
 #include "../buffer.hpp"
 #include "../shader.hpp"
 
-class cubemap_renderer
+class CubemapRenderer
 {
     public:
 
@@ -53,12 +53,12 @@ class cubemap_renderer
     private:
     struct members
     {
-            texture cubemap;
+            Texture cubemap;
             Shader vShader;
             Shader fShader;
             shaderProgram sProgram;
             vertexArray VAO;
-            buffer VBO;              
+            Buffer VBO;              
             int w, h;
 
             members()

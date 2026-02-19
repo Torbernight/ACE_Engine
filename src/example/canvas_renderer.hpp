@@ -9,7 +9,7 @@
 #include "../texture.hpp"
 #include "shader_compiler.hpp"
 
-class canvas_renderer
+class CanvasRenderer
 {
         public:
 
@@ -23,7 +23,7 @@ class canvas_renderer
         }
         static void unbind_framebuffer()
         {
-                framebuffer::unbind();
+                Framebuffer::unbind();
         } 
         void use_shader()
         {
@@ -85,14 +85,14 @@ class canvas_renderer
 
         struct members
         {
-                framebuffer FB;
+                Framebuffer FB;
                 std::filesystem::path vShader_Path;
                 std::filesystem::path fShader_Path;
                 Shader vShader;
                 Shader fShader;
                 shaderProgram sProgram;
                 vertexArray VAO;
-                buffer VBO;              
+                Buffer VBO;              
                 int w, h;
 
                 members()
@@ -100,5 +100,5 @@ class canvas_renderer
         } m;
 
         void initVAO();
-        void initFBO(int w, int h, std::initializer_list<texture::texture_parameters>&& Attachments);
+        void initFBO(int w, int h, std::initializer_list<Texture::TextureParameters>&& Attachments);
 };

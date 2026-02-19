@@ -3,7 +3,7 @@
 #include <vector>
 #include <initializer_list>
 
-class buffer;
+class Buffer;
 
 class vertexArray
 {
@@ -22,8 +22,8 @@ class vertexArray
 
     void generateVAO();
 
-    void setVertexAttributes(buffer &B);
-    void setVertexAttributes(const buffer &B, size_t offset, size_t stride);
+    void setVertexAttributes(Buffer &B);
+    void setVertexAttributes(const Buffer &B, size_t offset, size_t stride);
 
     void bind();
 

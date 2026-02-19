@@ -4,10 +4,10 @@
 #include <execution>
 #include "mesh.hpp"
 
-void mesh::init()
+void Mesh::init()
 {
     m.VBO.generate();
-    m.VBO.bufferData(m.vertices.size()*sizeof(vertex), m.vertices.data(), GL_STATIC_DRAW);
+    m.VBO.bufferData(m.vertices.size()*sizeof(Vertex), m.vertices.data(), GL_STATIC_DRAW);
     m.VAO.generateVAO();
     m.VAO.setVertexAttributes(m.VBO);
     m.VAO.bind();
@@ -17,7 +17,7 @@ void mesh::init()
     m.VAO.unbind();
 }
 
-void mesh::apply_transform()
+void Mesh::apply_transform()
 {
     using namespace glm;
     mat3 ntransform = transpose(inverse(mat3(m.transform)));
@@ -39,7 +39,7 @@ void mesh::apply_transform()
     compute_AABB();
 }
 
-void mesh::join_identical_vertices()
+void Mesh::join_identical_vertices()
 {
     std::vector<unsigned int> repeated;
     
@@ -59,10 +59,10 @@ void mesh::join_identical_vertices()
         }
     }
     if (!repeated.empty())
-        m.vertices.erase(std::remove_if(m.vertices.begin(), m.vertices.end(), [&](vertex &V){return std::count(repeated.begin(), repeated.end(), (unsigned int)(&V - &m.vertices[0])) > 0;}));
+        m.vertices.erase(std::remove_if(m.vertices.begin(), m.vertices.end(), [&](Vertex &V){return std::count(repeated.begin(), repeated.end(), (unsigned int)(&V - &m.vertices[0])) > 0;}));
 }
 
-void mesh::render()
+void Mesh::render()
 {
     if (!m.visible)
         return;
@@ -71,17 +71,17 @@ void mesh::render()
     glDrawElements(GL_TRIANGLES, m.indices.size(), GL_UNSIGNED_INT, nullptr);
 }
 
-void mesh::onFrustum(const frustum& F)
+void Mesh::onFrustum(const frustum& F)
 {
     m.visible = F.testAABB(m.bounding_box*m.transform);
 }
 
-bool mesh::isInstance(const mesh& M) const
+bool Mesh::isInstance(const Mesh& M) const
 {
     static const std::regex pattern("\\.[0-9][0-9][0-9]");
 
-    std::string subName0 = std::regex_replace(m.Name,pattern,"");
-    std::string subName1 = std::regex_replace(M.m.Name,pattern,"");
+    std::string subName0 = std::regex_replace(m.name,pattern,"");
+    std::string subName1 = std::regex_replace(M.m.name,pattern,"");
     
     return subName0 == subName1 &&
         m.vertices.size() == M.m.vertices.size() &&
@@ -89,7 +89,7 @@ bool mesh::isInstance(const mesh& M) const
         m.materialIndex == M.m.materialIndex;
 }
 
-void mesh::compute_AABB()
+void Mesh::compute_AABB()
 {
     glm::vec3 maxV(-FLT_MAX), minV(FLT_MAX);
     for(unsigned int index : m.indices)

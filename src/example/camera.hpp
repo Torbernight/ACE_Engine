@@ -7,11 +7,11 @@
 #include "geometry/frustum.hpp"
 #include "object.hpp"
 
-class camera
+class Camera
 {
     public:
 
-    struct movement
+    struct Input
     {
         uint8_t forward    = 0;
         uint8_t backward   = 0;
@@ -24,7 +24,7 @@ class camera
         uint8_t hasClicked = 0;
         uint8_t use_key    = 0;
         uint8_t use        = 0;
-    } movement;
+    } Input;
 
 
     virtual void move(float dt);
@@ -148,8 +148,8 @@ class camera
         bool moving = false;
         bool jump = false;
 
-        dynamic_object* grabbed_object = nullptr;
-        dynamic_object* pointed_object = nullptr;
+        DynamicObject* grabbed_object = nullptr;
+        DynamicObject* pointed_object = nullptr;
 
         glm::vec3 previousPos = glm::vec3(0.0);
         glm::vec3 realVel = glm::vec3(0.0);

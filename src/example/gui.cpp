@@ -9,20 +9,20 @@
 #define XY(V) V.x, V.y
 
 
-void MyGame::imgui_frame_start()
+void MyGame::imguiFrameStart()
 {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
 }
 
-void MyGame::imgui_frame_end()
+void MyGame::imguiFrameEnd()
 {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void MyGame::info_window()
+void MyGame::infoWindow()
 {
     if (!showInfo)
         return;
@@ -43,17 +43,17 @@ void MyGame::info_window()
     ImGui::End();
 }
 
-inline static const char* get_MSAA_str(MyGame::MS_Level L)
+inline static const char* get_MSAA_str(MyGame::MSAALevel L)
 {
     switch(L)
     {
-        case MyGame::MS_Level::MS_OFF:
+        case MyGame::MSAALevel::MS_OFF:
             return "Off";
-        case MyGame::MS_Level::MS_2:
+        case MyGame::MSAALevel::MS_2:
             return "x2";
-        case MyGame::MS_Level::MS_4:
+        case MyGame::MSAALevel::MS_4:
             return "x4";
-        case MyGame::MS_Level::MS_8:
+        case MyGame::MSAALevel::MS_8:
             return "x8";
         default:
             return "";
@@ -61,7 +61,7 @@ inline static const char* get_MSAA_str(MyGame::MS_Level L)
 }
 
 
-void MyGame::show_config()
+void MyGame::showConfig()
 {
     ImGui::Begin("Config", &escape);
 
@@ -87,9 +87,9 @@ void MyGame::show_config()
     ImGui::SeparatorText("Graphics Options");
 
     int msaa_level = (int)MSAA;
-    if (ImGui::SliderInt("MSAA", &msaa_level, 0, MS_Level::MS_NUM_OPTIONS-1, get_MSAA_str(MSAA), ImGuiSliderFlags_AlwaysClamp))
+    if (ImGui::SliderInt("MSAA", &msaa_level, 0, MSAALevel::MS_NUM_OPTIONS-1, get_MSAA_str(MSAA), ImGuiSliderFlags_AlwaysClamp))
     {
-        MSAA = (MS_Level)(msaa_level);
+        MSAA = (MSAALevel)(msaa_level);
         msaa_level = MSAA == MS_OFF ? 0 : 1 << msaa_level;
         gameScene->get_DRenderer().reset(msaa_level);
         if (msaa_level){
@@ -109,7 +109,7 @@ void MyGame::show_config()
     ImGui::SeparatorText("Scene Info");
 
     for (const auto &M : gameScene->Meshes) {
-        ImGui::Text("Mesh name: %s", M.m.Name.c_str());
+        ImGui::Text("Mesh name: %s", M.m.name.c_str());
         ImGui::Text("visible: %u", M.m.visible);
         ImGui::Separator();
     }

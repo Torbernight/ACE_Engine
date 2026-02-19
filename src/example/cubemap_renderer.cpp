@@ -3,7 +3,7 @@
 #include "../texture_load.hpp"
 #include "cubemap_renderer.hpp"
 
-void cubemap_renderer::initVAO()
+void CubemapRenderer::initVAO()
 {
         const float vertices[108] = {
                 -1.0f,  1.0f, -1.0f,
@@ -67,7 +67,7 @@ void cubemap_renderer::initVAO()
 
 //#define GL_TEXTURE_CUBE_MAP_POSITIVE_X 0x8515
 
-void cubemap_renderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, const std::filesystem::path& skybox, int cubemap_binding)
+void CubemapRenderer::init(const std::filesystem::path& vShader, const std::filesystem::path& fShader, int w, int h, const std::filesystem::path& skybox, int cubemap_binding)
 {
     m.vShader = compile_shader(shader_source(EShLanguage::EShLangVertex, vShader));
     m.fShader = compile_shader(shader_source(EShLanguage::EShLangFragment, fShader));
@@ -79,7 +79,7 @@ void cubemap_renderer::init(const std::filesystem::path& vShader, const std::fil
     m.sProgram.linkProgram();
 
     initVAO();
-    imageArray_data array_data = load_image_array("assets/textures/skybox/" / skybox);
+    ImageArrayData array_data = load_image_array("assets/textures/skybox/" / skybox);
 
     m.cubemap.generate();
 
@@ -111,7 +111,7 @@ void cubemap_renderer::init(const std::filesystem::path& vShader, const std::fil
 
 }
 
-void cubemap_renderer::render()
+void CubemapRenderer::render()
 {
     m.VAO.bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);

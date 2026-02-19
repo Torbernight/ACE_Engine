@@ -3,16 +3,16 @@
 #include <utility>
 
 class Material;
-class framebuffer;
+class Framebuffer;
 
-class texture
+class Texture
 {
         friend class Material;
-        friend class framebuffer;
+        friend class Framebuffer;
         
         public:
 
-        struct texture_parameters
+        struct TextureParameters
         {
                 unsigned int target = 0;
                 unsigned int slot = 0;
@@ -73,48 +73,48 @@ class texture
 
         int get_target_dims();
 
-        texture(const texture& T):
+        Texture(const Texture& T):
         m(T.m)
         {
-                const_cast<texture&>(T).m = {};
+                const_cast<Texture&>(T).m = {};
         }
-        texture& operator=(const texture& T)
+        Texture& operator=(const Texture& T)
         {
-                texture temp(T);
+                Texture temp(T);
                 return (*this = temp);
         }
 
-        texture(texture&& T):
+        Texture(Texture&& T):
         m(std::move(T.m))
         {}
 
-        texture(texture &T):
+        Texture(Texture &T):
         m(T.m)
         {
                 T.m = {};
         }
 
-        texture& operator=(texture&& T)
+        Texture& operator=(Texture&& T)
         {
-                texture temp(T);
+                Texture temp(T);
                 m = temp.m;
                 temp.m = {};
                 return *this;
         }
-        texture& operator=(texture& T)
+        Texture& operator=(Texture& T)
         {
-                texture temp(T);
+                Texture temp(T);
                 m = temp.m;
                 temp.m = {};
                 return *this;         
         }
-        texture()
+        Texture()
         {
                 m = {};
         }
-        ~texture();
+        ~Texture();
 
-        texture(const texture_parameters& tp)
+        Texture(const TextureParameters& tp)
         : m(tp)
         {}
 
@@ -138,7 +138,7 @@ class texture
                 unsigned int width, height, depth;
 
                 members() = default;
-                members(const texture_parameters &tp): target(tp.target), slot(tp.slot),
+                members(const TextureParameters &tp): target(tp.target), slot(tp.slot),
                 format(tp.format), internal_format(tp.internal_format),
                 type(tp.type), width(tp.width), height(tp.height), depth(tp.depth)
                 {}

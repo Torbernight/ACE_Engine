@@ -1,7 +1,7 @@
 #pragma once
 #include "../camera.hpp"
 
-class editor_camera : public camera
+class editor_camera : public Camera
 {
         public:
 

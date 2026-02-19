@@ -3,11 +3,11 @@
 #include <GL/glew.h>
 #include "framebuffer.hpp"
 
-void framebuffer::gen_FBO()
+void Framebuffer::gen_FBO()
 {
         glGenFramebuffers(1, &m.FBO);
 }
-framebuffer::~framebuffer()
+Framebuffer::~Framebuffer()
 {
         if (m.FBO)
                 glDeleteFramebuffers(1, &m.FBO);
@@ -15,17 +15,17 @@ framebuffer::~framebuffer()
                 glDeleteRenderbuffers(1, &m.RBO);
 }
 
-void framebuffer::bind()
+void Framebuffer::bind()
 {
         glBindFramebuffer(GL_FRAMEBUFFER, m.FBO);
 }
 
-void framebuffer::unbind()
+void Framebuffer::unbind()
 {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void framebuffer::reset(int MSAA)
+void Framebuffer::reset(int MSAA)
 {
         this->m.MSAA = MSAA;
 
@@ -60,7 +60,7 @@ void framebuffer::reset(int MSAA)
                 T.unbind();
         }
         if (m.depth_attachment){
-                texture &T = m.depth_attachment;
+                Texture &T = m.depth_attachment;
                 glDeleteTextures(1, &T.m.texture);
                 if (m.MSAA){
                         T.setTarget(GL_TEXTURE_2D_MULTISAMPLE);
@@ -87,13 +87,13 @@ void framebuffer::reset(int MSAA)
 }
 
 
-void framebuffer::resize(unsigned int w, unsigned int h)
+void Framebuffer::resize(unsigned int w, unsigned int h)
 {
         m.w = w;
         m.h = h;
         reset(m.MSAA);
 }
-bool framebuffer::getFramebufferStatus()
+bool Framebuffer::getFramebufferStatus()
 {
         switch(glCheckFramebufferStatus(GL_FRAMEBUFFER))
         {
@@ -129,7 +129,7 @@ bool framebuffer::getFramebufferStatus()
 }
 
 
-void framebuffer::setup()
+void Framebuffer::setup()
 {
         std::vector<unsigned int> drawBuffers;
         drawBuffers.clear();
@@ -138,7 +138,7 @@ void framebuffer::setup()
         bind();
 
         for(int i = 0; i < m.color_attachments.size(); i++) {
-                texture& T = m.color_attachments[i];
+                Texture& T = m.color_attachments[i];
                 unsigned int attachment = GL_COLOR_ATTACHMENT0+i;
                 unsigned int target = T.get_Target();
                 unsigned int tex = T.get_TexObject();
@@ -167,7 +167,7 @@ void framebuffer::setup()
         unbind();
 }
 
-void framebuffer::bindTextures()
+void Framebuffer::bindTextures()
 {
         for(auto &T : m.color_attachments)
         {
@@ -177,7 +177,7 @@ void framebuffer::bindTextures()
                 m.depth_attachment.bind_unit();
 }
 
-void framebuffer::create_RBO()
+void Framebuffer::create_RBO()
 {
         unsigned int internalFormat = 0;
         unsigned int attachment = 0;
@@ -199,10 +199,10 @@ void framebuffer::create_RBO()
         glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, m.RBO);
 }
 
-texture& framebuffer::gen_depth_attachment(const texture::texture_parameters& tp, int MSAA)
+Texture& Framebuffer::gen_depth_attachment(const Texture::TextureParameters& tp, int MSAA)
 {
         this->m.MSAA = MSAA;
-        m.depth_attachment = texture(tp);
+        m.depth_attachment = Texture(tp);
         m.depth_attachment.generate();
         m.depth_attachment.bind();
         if (MSAA){
@@ -221,10 +221,10 @@ texture& framebuffer::gen_depth_attachment(const texture::texture_parameters& tp
 }
 
 
-texture& framebuffer::gen_color_attachment(const texture::texture_parameters& tp, int MSAA)
+Texture& Framebuffer::gen_color_attachment(const Texture::TextureParameters& tp, int MSAA)
 {
         this->m.MSAA = MSAA;
-        texture T(tp);
+        Texture T(tp);
         T.generate();
         T.bind();
         if (T.get_Target() == GL_TEXTURE_2D_MULTISAMPLE){

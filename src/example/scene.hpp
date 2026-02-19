@@ -30,7 +30,7 @@ typedef std::filesystem::path path;
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
 #define GL_UNIFORM_BUFFER 0x8A11
 
-struct material_buffer
+struct MaterialBuffer
 {
     int Albedo;
     int Normal;
@@ -40,18 +40,19 @@ struct material_buffer
     float alpha = 1.0f;
 };
 
-class scene
+class Scene
 {
     public:
-    std::vector<mesh> Meshes;
-    std::vector<light> Lights;
+    std::vector<Mesh> Meshes;
+    std::vector<Light> Lights;
     std::vector<Material> Materials;
-    std::vector<static_object>  static_objects;
-    std::vector<dynamic_object> dynamic_objects;
-    std::vector<object*> objects;
+    std::vector<StaticObject>  static_objects;
+    std::vector<DynamicObject> dynamic_objects;
+    std::vector<Object*> objects;
     std::vector<unsigned int> Mesh_indices;
 
-    struct postprocess{
+    struct postprocess
+    {
         float Brightness = 0.604;
         float Contrast = 1.828;
         float Saturation = 0.686;
@@ -60,7 +61,7 @@ class scene
         bool FXAA = true;
     } postprocess;
 
-    static scene* import_scene(const path& pFile);
+    static Scene* import_scene(const path& pFile);
 
     void load_DeferredShader(const path& vertex, const path& fragment);
     
@@ -93,12 +94,12 @@ class scene
 
     void updatePostProcessBuffer();
 
-    void render(buffer& Transform_Buffer, size_t transform_offset);
+    void render(Buffer& Transform_Buffer, size_t transform_offset);
 
-    canvas_renderer& get_DRenderer() {
+    CanvasRenderer& get_DRenderer() {
         return m.DRenderer;
     }
-    canvas_renderer& get_postProcRenderer() {
+    CanvasRenderer& get_postProcRenderer() {
         return m.PostProcRenderer;
     }
 
@@ -107,7 +108,7 @@ class scene
         return m.defaultCamera.m.pos;
     }
 
-    const camera& get_defaultCamera() const
+    const Camera& get_defaultCamera() const
     {
         return m.defaultCamera;
     }
@@ -121,19 +122,19 @@ class scene
 
     struct members
     {
-        buffer UBO;
-        buffer mBuffer;
-        buffer postProcess_buffer;
-        canvas_renderer DRenderer;
-        canvas_renderer PostProcRenderer;
-        cubemap_renderer skybox;
+        Buffer UBO;
+        Buffer mBuffer;
+        Buffer postProcess_buffer;
+        CanvasRenderer DRenderer;
+        CanvasRenderer PostProcRenderer;
+        CubemapRenderer skybox;
         std::vector<unsigned int> init_constants;
-        std::vector<material_buffer> Materials;
+        std::vector<MaterialBuffer> Materials;
         Shader vShader;
         Shader fShader;
         shaderProgram sProgram;
 
-        camera defaultCamera;
+        Camera defaultCamera;
 
         path scene_vShader = "";
         path scene_fShader = "";
@@ -157,9 +158,9 @@ class scene
     void bind_materials();
     void render_postprocess();
     void render_deferred();
-    void render_static_objects(buffer &Transform_Buffer, size_t transform_offset);
-    void render_dynamic_objects(buffer &Transform_Buffer, size_t transform_offset);
-    static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, material_buffer& matBuff, Material& Mat);
+    void render_static_objects(Buffer &Transform_Buffer, size_t transform_offset);
+    void render_dynamic_objects(Buffer &Transform_Buffer, size_t transform_offset);
+    static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, MaterialBuffer& matBuff, Material& Mat);
     void set_max_instances();
     void clean_meshes();
     void load_materials(const aiScene* Scene, const path& pFile);
@@ -167,9 +168,9 @@ class scene
     void load_lights(const aiScene* Scene);
     void find_instances();
     void find_batchable();
-    static mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);
-    static void combine_meshes(mesh& A, mesh& B);
-    static void combine_as_instance(mesh& A, mesh& Instance);
+    static Mesh process_mesh(const aiMesh* Mesh, const aiMatrix4x4& Transform);
+    static void combine_meshes(Mesh& A, Mesh& B);
+    static void combine_as_instance(Mesh& A, Mesh& Instance);
     void process_node(const aiNode* Node, const aiScene* Scene);
     void process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform);
 };

@@ -2,25 +2,25 @@
 
 #include "window.hpp"
 
-class application 
+class Application 
 {
     public:
 
-    window win;
+    Window win;
 
-    application(const std::string_view& title, int window_w, int window_h);
-    application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy);
-    application(const std::string_view& title, int window_w, int window_h, int flags);
-    application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
+    Application(const std::string_view& title, int window_w, int window_h);
+    Application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy);
+    Application(const std::string_view& title, int window_w, int window_h, int flags);
+    Application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
     
-    virtual void process_events() = 0;
+    virtual void processEvents() = 0;
 
     virtual void mainLoop() = 0;
 
-    application(application&&) = delete;
-    application(const application&) = delete;
-    application& operator=(const application&) = delete;
-    application& operator=(application&&) = delete;
+    Application(Application&&) = delete;
+    Application(const Application&) = delete;
+    Application& operator=(const Application&) = delete;
+    Application& operator=(Application&&) = delete;
 
     protected:
     void m_init();

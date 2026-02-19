@@ -15,14 +15,14 @@
 #include "scene.hpp"
 #include "physics.hpp"
 
-struct state_UBO
+struct StateUBO
 {
     uint64_t frame;
     float runtime;
     float delta;
     glm::vec2 resolution;
 };
-struct camera_UBO
+struct CameraUBO
 {
     glm::vec4 pos;
     glm::vec4 front;
@@ -30,10 +30,10 @@ struct camera_UBO
     float zFar;
 };
 
-class MyGame : public application 
+class MyGame : public Application 
 {
     public:
-    MyGame(int win_w, int win_h) : application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
+    MyGame(int win_w, int win_h) : Application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
 
     uint64_t frame = 0;
     uint64_t ticks = 0;
@@ -44,12 +44,12 @@ class MyGame : public application
     Mix_Chunk *footsteps_wave = nullptr;
     ImGuiIO* imgui_IO = nullptr;
 
-    camera player;
-    scene *gameScene = nullptr;
+    Camera player;
+    Scene *gameScene = nullptr;
 
-    buffer TransformBuffer = buffer(GL_UNIFORM_BUFFER);
-    buffer Camera_Buffer = buffer(GL_UNIFORM_BUFFER);
-    buffer State_Buffer = buffer(GL_UNIFORM_BUFFER);
+    Buffer TransformBuffer = Buffer(GL_UNIFORM_BUFFER);
+    Buffer Camera_Buffer = Buffer(GL_UNIFORM_BUFFER);
+    Buffer State_Buffer = Buffer(GL_UNIFORM_BUFFER);
 
     Timer frame_timer;
 
@@ -59,7 +59,7 @@ class MyGame : public application
     bool showInfo = false;
     float mouse_sensitivity = 10.0f;
     float tick_rate = 1.0/60.0;
-    enum MS_Level{
+    enum MSAALevel{
         MS_OFF,
         MS_2,
         MS_4,
@@ -69,41 +69,41 @@ class MyGame : public application
 
 
     // initialization functions
-    void init_imgui();
-    void init_gl_parameters();
-    void init_sdl_parameters();
-    void init_audio();
+    void initImGui();
+    void initGLParameters();
+    void initSDLParameters();
+    void initAudio();
     void init();
 
     // events
     void processKeyEvents(const SDL_KeyboardEvent &E);
     void processMouseEvents(const SDL_MouseMotionEvent& E);
     void processWindowEvents(const SDL_WindowEvent &E);
-    void process_Mousewheel(const SDL_MouseWheelEvent& E);
-    void process_events() override;
+    void processMouseWheel(const SDL_MouseWheelEvent& E);
+    void processEvents() override;
     
-    void resize_window(int w, int h);
+    void resizeWindow(int w, int h);
     void setVSync();
 
-    void show_config();
-    void info_window();
-    static void imgui_frame_start();
-    static void imgui_frame_end();
+    void showConfig();
+    void infoWindow();
+    static void imguiFrameStart();
+    static void imguiFrameEnd();
 
-    void update_UBOs();
+    void updateUniformBuffers();
 
-    void test_collision();
-    void update_physics();
+    void testCollision();
+    void updatePhysics();
 
-    void check_on_frustum();
+    void frustumTest();
 
-    bool meshIntersects(const mesh& M);
-    dynamic_object* select_object();
-    void point_object();
-    void use_object();
-    void check_selectable_object();
+    bool meshIntersects(const Mesh& M);
+    DynamicObject* selectObject();
+    void pointObject();
+    void useObject();
+    void checkSelectableObject();
 
-    void update_gameLogic();
+    void updateGameLogic();
 
     inline void startFrame();
     inline void endFrame();

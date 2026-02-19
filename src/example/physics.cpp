@@ -15,7 +15,7 @@ void clampnan(glm::vec3 &V){
 }
 
 
-void test_player_collision(camera &player, scene* gameScene, float tick_rate)
+void test_player_collision(Camera &player, Scene* gameScene, float tick_rate)
 {
     using namespace glm;
 
@@ -29,7 +29,7 @@ void test_player_collision(camera &player, scene* gameScene, float tick_rate)
 
     //TODO some kind of space partitioning
     std::for_each(std::execution::par, gameScene->static_objects.begin(), gameScene->static_objects.end(),
-    [&player, gameScene, tick_rate, &mutex](const static_object& Obj)
+    [&player, gameScene, tick_rate, &mutex](const StaticObject& Obj)
     {
         auto &M = gameScene->Meshes[Obj.m.Mesh];
         const mat4& transform = M.m.transform;
@@ -44,7 +44,7 @@ void test_player_collision(camera &player, scene* gameScene, float tick_rate)
 }
 
 
-void test_narrow_collision(const static_object& obj, camera& player, float tick_rate)
+void test_narrow_collision(const StaticObject& obj, Camera& player, float tick_rate)
 {
     using namespace glm;
     for (const auto &tri : obj.collision_mesh)
@@ -55,7 +55,7 @@ void test_narrow_collision(const static_object& obj, camera& player, float tick_
     }
 }
 
-void resolve_collision(const triangle &tri, const glm::vec3& normal, camera& player, float tick_rate)
+void resolve_collision(const triangle &tri, const glm::vec3& normal, Camera& player, float tick_rate)
 {
     using namespace glm;
 
@@ -75,7 +75,7 @@ void resolve_collision(const triangle &tri, const glm::vec3& normal, camera& pla
     player.make_AABB();
 }
 
-void test_object_collision(scene* gameScene, float tick_rate)
+void test_object_collision(Scene* gameScene, float tick_rate)
 {
     std::mutex mutex;
     for (auto &Obj : gameScene->dynamic_objects)
@@ -87,7 +87,7 @@ void test_object_collision(scene* gameScene, float tick_rate)
         auto begin = gameScene->static_objects.begin();
         auto end = gameScene->static_objects.end();
         std::for_each(std::execution::par,begin,end,
-        [gameScene, tick_rate, &mutex, &box, &M, &Obj](const static_object& static_obj)
+        [gameScene, tick_rate, &mutex, &box, &M, &Obj](const StaticObject& static_obj)
         {
             auto &Mesh = gameScene->Meshes[static_obj.m.Mesh];
             const glm::mat4& transform = Mesh.m.transform;
@@ -104,7 +104,7 @@ void test_object_collision(scene* gameScene, float tick_rate)
     }
 }
 
-void resolve_collision(const AABB& box, dynamic_object& Obj, const AABB& hitbox, scene* gameScene, float tick_rate)
+void resolve_collision(const AABB& box, DynamicObject& Obj, const AABB& hitbox, Scene* gameScene, float tick_rate)
 {
     auto &M = gameScene->Meshes[Obj.m.Mesh];
     glm::vec3 dir = (box.get_center() - hitbox.get_center()) / hitbox.get_extent();

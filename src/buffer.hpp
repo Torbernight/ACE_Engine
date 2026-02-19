@@ -1,25 +1,25 @@
 #pragma once
 
-class buffer
+class Buffer
 {
     public:
 
-    buffer(int target);
+    Buffer(int target);
 
-    buffer(const buffer& B) :
+    Buffer(const Buffer& B) :
     m(B.m)
     {
-        const_cast<buffer&>(B).m = {};
+        const_cast<Buffer&>(B).m = {};
     }
-    buffer& operator=(const buffer& B)
+    Buffer& operator=(const Buffer& B)
     {
-        buffer temp(B);
+        Buffer temp(B);
         m = temp.m;
         temp.m = {};
         return *this;
     }
 
-    ~buffer();
+    ~Buffer();
 
     void generate();
 

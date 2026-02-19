@@ -5,17 +5,17 @@
 typedef std::chrono::high_resolution_clock Time;
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::duration<float> fsec;
-typedef std::chrono::_V2::system_clock::time_point time_point;
+typedef std::chrono::_V2::system_clock::time_point TimePoint;
 
 inline static
-time_point get_time()
+TimePoint get_time()
 {
     return Time::now();
 }
 
 struct Timer
 {
-    time_point T0, T1;
+    TimePoint T0, T1;
     fsec T;
     float dt;
 

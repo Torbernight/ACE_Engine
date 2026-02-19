@@ -3,7 +3,7 @@
 #include "mesh.hpp"
 #include "geometry/triangle.hpp"
 
-class object
+class Object
 {
     public:
 
@@ -37,12 +37,12 @@ class object
     bool m_selected = false;
     bool m_grabbed = false;
 
-    object() = default;
+    Object() = default;
 
-    object(bool collision, bool static_mesh, bool grabbable, bool selectable, bool selected, bool grabbed) : 
+    Object(bool collision, bool static_mesh, bool grabbable, bool selectable, bool selected, bool grabbed) : 
     m_selected(selected), m_grabbed(grabbed), m_collision(collision), m_static_mesh(static_mesh), m_grabbable(grabbable), m_selectable(selectable)
     {}
-    object(unsigned int M, bool collision, bool static_mesh, bool grabbable, bool selectable, bool selected, bool grabbed) : 
+    Object(unsigned int M, bool collision, bool static_mesh, bool grabbable, bool selectable, bool selected, bool grabbed) : 
     m(M), m_selected(selected), m_grabbed(grabbed), m_collision(collision), m_static_mesh(static_mesh), m_grabbable(grabbable), m_selectable(selectable)
     {}
     protected:
@@ -53,15 +53,15 @@ class object
 
 };
 
-class static_object : public object
+class StaticObject : public Object
 {
     public:
-    static_object() : 
-    object(true, true, false, false, false, false)
+    StaticObject() : 
+    Object(true, true, false, false, false, false)
     {}
 
-    static_object(unsigned int M) : 
-    object(M, true, true, false, false, false, false)
+    StaticObject(unsigned int M) : 
+    Object(M, true, true, false, false, false, false)
     {}
 
     void grab(void*)
@@ -84,16 +84,16 @@ class static_object : public object
     
 };
 
-class dynamic_object : public object
+class DynamicObject : public Object
 {
     public:
 
-    dynamic_object() :
-    object(true, false, true, true, false, false)
+    DynamicObject() :
+    Object(true, false, true, true, false, false)
     {}
 
-    dynamic_object(unsigned int M) : 
-    object(M, true, true, false, false, false, false)
+    DynamicObject(unsigned int M) : 
+    Object(M, true, true, false, false, false, false)
     {}
 
     glm::vec3 vel = glm::vec3(0.0f);

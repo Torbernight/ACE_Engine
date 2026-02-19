@@ -4,21 +4,21 @@
 
 typedef struct SDL_Window SDL_Window;
 
-class window {
+class Window {
     private:
     struct members;
     public:
 
 
-    window(const std::string_view& title, int width, int height, int posx, int posy);
-    window(const std::string_view& title, int width, int height, int posx, int posy, int flags);
-    window(const members& mstruct);
-    ~window();
+    Window(const std::string_view& title, int width, int height, int posx, int posy);
+    Window(const std::string_view& title, int width, int height, int posx, int posy, int flags);
+    Window(const members& mstruct);
+    ~Window();
 
-    window& operator=(const window&) = delete;
-    window& operator=(window&&) = delete;
-    window(const window&) = delete;
-    window(window&&) = delete;
+    Window& operator=(const Window&) = delete;
+    Window& operator=(Window&&) = delete;
+    Window(const Window&) = delete;
+    Window(Window&&) = delete;
 
     SDL_Window* getHandle() const {return m.SDL_Win;}
     void* getContext() const {return m.GL_Context;}

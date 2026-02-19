@@ -13,16 +13,16 @@ void editor_camera::move(float dt)
     using namespace glm;
 
     m.vel = 
-    (float)(movement.forward-movement.backward)*move2D(m.front)
+    (float)(Input.forward-Input.backward)*move2D(m.front)
     + 
-    (float)(movement.right-movement.left)*move2D(m.right)
+    (float)(Input.right-Input.left)*move2D(m.right)
     + 
-    (float)(movement.up-movement.down)*world_up;
+    (float)(Input.up-Input.down)*world_up;
 
     m.moving = m.vel != vec3(0.0);
 
     float speed = length(m.vel);
-    float speedcap = mix(s_walk_speed, s_sprint_speed, (float)movement.sprint);
+    float speedcap = mix(s_walk_speed, s_sprint_speed, (float)Input.sprint);
 
     if (speed == 0)
         return;

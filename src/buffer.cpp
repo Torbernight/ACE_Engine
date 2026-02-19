@@ -1,38 +1,38 @@
 #include <GL/glew.h>
 #include "buffer.hpp"
 
-buffer::buffer(int target)
+Buffer::Buffer(int target)
 : m(target)
 {
 }
 
-void buffer::generate()
+void Buffer::generate()
 {
     glGenBuffers(1, &m.BufferObject);
 }
 
-void buffer::bind()
+void Buffer::bind()
 {
     glBindBuffer(m.target, m.BufferObject);
 }
 
-void buffer::unbind()
+void Buffer::unbind()
 {
     glBindBuffer(m.target, 0);
 }
 
-void buffer::bindBufferBase(int binding)
+void Buffer::bindBufferBase(int binding)
 {
     m.binding = binding;
     glBindBufferBase(m.target, m.binding, m.BufferObject);
 }
 
-void buffer::bindBufferBase()
+void Buffer::bindBufferBase()
 {
     glBindBufferBase(m.target, m.binding, m.BufferObject);
 }
 
-void buffer::bufferData(int size, const void* data, int usage)
+void Buffer::bufferData(int size, const void* data, int usage)
 {
     m.size = size;
     bind();
@@ -40,7 +40,7 @@ void buffer::bufferData(int size, const void* data, int usage)
     unbind();
 }
 
-void buffer::bufferData(const void* data, int usage)
+void Buffer::bufferData(const void* data, int usage)
 {
     bind();
     glBufferData(m.target, m.size, data, usage);
@@ -48,14 +48,14 @@ void buffer::bufferData(const void* data, int usage)
 }
 
 
-void buffer::bufferSubData(int size, int offset, const void* data)
+void Buffer::bufferSubData(int size, int offset, const void* data)
 {
     bind();
     glBufferSubData(m.target, offset, size, data);
     unbind();
 }
 
-buffer::~buffer()
+Buffer::~Buffer()
 {
     if (m.BufferObject)
         glDeleteBuffers(1, &m.BufferObject);

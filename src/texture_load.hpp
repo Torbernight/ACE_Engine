@@ -3,7 +3,7 @@
 #include <FreeImagePlus.h>
 #include <filesystem>
 
-struct image_data
+struct ImageData
 {
         unsigned int width, height;
         char* data;
@@ -12,12 +12,12 @@ struct image_data
         unsigned int format, internal_format;
 };
 
-image_data load_image(const std::filesystem::path& P);
-image_data process_image_data(const image_data& data);
+ImageData load_image(const std::filesystem::path& P);
+ImageData process_image_data(const ImageData& data);
 
-struct imageArray_data
+struct ImageArrayData
 {
         size_t layers;
-        image_data *data;
+        ImageData *data;
 };
-imageArray_data load_image_array(const std::filesystem::path& P);
+ImageArrayData load_image_array(const std::filesystem::path& P);

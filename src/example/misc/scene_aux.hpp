@@ -46,11 +46,11 @@ void process_faces(const aiMesh* Mesh, std::vector<uint32_t> *indices)
 }
 
 inline static
-void process_vertices(const aiMesh* Mesh, std::vector<mesh::vertex> *vertices)
+void process_vertices(const aiMesh* Mesh, std::vector<Mesh::Vertex> *vertices)
 {
     for (int n = 0; n < Mesh->mNumVertices; n++)
     {
-        mesh::vertex V;
+        Mesh::Vertex V;
         V.position  = cast3D(Mesh->mVertices[n]);
         V.texcoord  = cast2D(Mesh->mTextureCoords[0][n]);
         V.normal    = cast3D(Mesh->mNormals[n]);

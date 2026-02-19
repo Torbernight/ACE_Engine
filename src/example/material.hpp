@@ -9,14 +9,14 @@
 typedef std::filesystem::path path;
 
 class sprite;
-class scene;
+class Scene;
 
 class Material
 {
     public:
 
     friend class sprite;
-    friend class scene;
+    friend class Scene;
     
     enum Texture_Index
     {
@@ -26,9 +26,9 @@ class Material
         Emissive
     };
 
-    texture& load(const path& Path, Texture_Index tex)
+    Texture& load(const path& Path, Texture_Index tex)
     {
-        image_data data = process_image_data(load_image(Path));
+        ImageData data = process_image_data(load_image(Path));
         set_texture(m.textures[tex], data, last_slot++);
         return m.textures[tex];
     }
@@ -41,7 +41,7 @@ class Material
         }
     }
 
-    texture& get(Texture_Index T)
+    Texture& get(Texture_Index T)
     {
         return m.textures[T];
     }
@@ -89,10 +89,10 @@ class Material
 
     struct members
     {
-        std::array<texture, nTextures> textures;
+        std::array<Texture, nTextures> textures;
     } m;
 
-    static void set_texture(texture& T, image_data& D, int slot);
+    static void set_texture(Texture& T, ImageData& D, int slot);
     static inline int last_slot = 0;
 
 };

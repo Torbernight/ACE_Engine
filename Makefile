@@ -10,7 +10,7 @@ CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
 CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
 CSOURCE := $(wildcard src/*.c) $(wildcard src/example/*.c) 
-CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp) $(wildcard src/imgui/*.cpp) src/imgui/backends/imgui_impl_sdl2.cpp src/imgui/backends/imgui_impl_opengl3.cpp src/imgui/misc/cpp/imgui_stdlib.cpp
+CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/example/*.cpp) $(wildcard include/imgui/*.cpp) include/imgui/backends/imgui_impl_sdl2.cpp include/imgui/backends/imgui_impl_opengl3.cpp include/imgui/misc/cpp/imgui_stdlib.cpp
 SOURCE = $(CSOURCE) $(CXXSOURCE)
 
 EDITOR_SOURCE = $(filter-out src/example/example.cpp, $(SOURCE)) $(wildcard src/example/editor/*.cpp)
@@ -29,7 +29,7 @@ EDITOR_OBJ = $(EDITOR_SOURCE: .cpp=.o)
 
 DEPENDS = ${OBJ:.o=.d}
 
-LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp -ltbb -lSDL2_mixer -lSPIRV -lglslang-default-resource-limits
+LIBS = -lGL -lGLEW -lSDL2 -lm -lfreeimageplus -lassimp -ltbb -lSDL2_mixer -lSPIRV -lglslang-default-resource-limits -lglslang
 
 EXE= cpp_template.out
 EDITOR = cpp_editor.out

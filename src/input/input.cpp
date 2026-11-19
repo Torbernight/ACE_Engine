@@ -2,13 +2,72 @@
 #include "SDL_assert.h"
 
 
+void InputHandler::begin_new_frame()
+{
+    for(auto const& kv : m.keys){
+        unsigned int key = kv.first;
+        KeyState val = kv.second;
+        if (val == KEY_RELEASED){
+            m.keys[key] = KEY_NOT_PRESSED;
+        } else if (val == KEY_PRESSED){
+            m.keys[key] = KEY_HELD;
+        }
+    }
+}
+
 bool InputHandler::is_key_pressed(Key k) const
 {
     if (m.keys.count(k) == 0){
         return false;
     }
-    return m.keys.at(k);
+
+    KeyState state = m.keys.at(k);
+    return state == KEY_PRESSED || state == KEY_HELD;
 }
+
+bool InputHandler::is_key_held(Key k) const 
+{
+    if (m.keys.count(k) == 0){
+        return false;
+    }
+
+    KeyState state = m.keys.at(k);
+    return state == KEY_HELD;
+}
+
+bool InputHandler::is_key_just_pressed(Key k) const 
+{
+    if (m.keys.count(k) == 0){
+        return false;
+    }
+
+    KeyState state = m.keys.at(k);
+    return state == KEY_PRESSED;
+}
+
+
+bool InputHandler::is_key_just_released(Key k) const 
+{
+    if (m.keys.count(k) == 0){
+        return false;
+    }
+
+    KeyState state = m.keys.at(k);
+    return state == KEY_RELEASED;
+}
+
+
+bool InputHandler::is_key_not_pressed(Key k) const 
+{
+    if (m.keys.count(k) == 0){
+        return false;
+    }
+
+    KeyState state = m.keys.at(k);
+    return state == KEY_NOT_PRESSED;
+}
+
+
 
 bool InputHandler::is_moused_button_pressed(MouseButton b)  const
 {
@@ -46,7 +105,9 @@ void InputHandler::process_keyboard_event(const SDL_KeyboardEvent &event)
 
     bool pressed = event.type == SDL_KEYDOWN;
     int key = event.keysym.sym;
-    m.keys[key] = pressed;
+
+    m.keys[key] = pressed ? KEY_PRESSED : KEY_RELEASED;
+    
 }
 
 void InputHandler::process_mouse_event(const SDL_Event &event)

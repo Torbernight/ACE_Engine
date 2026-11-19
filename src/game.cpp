@@ -2,6 +2,10 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <execution>
+#include "SDL_keycode.h"
+#include "SDL_mouse.h"
+#include "backends/imgui_impl_sdl2.h"
+#include "imgui.h"
 #include "input/input.hpp"
 #include "physics/physics.hpp"
 #include "debug/debug.hpp"
@@ -35,6 +39,9 @@ Game::Game(const std::string& title, int window_w, int window_h, int window_posx
 void Game::processEvents()
 {
     InputHandler &input = InputHandler::get();
+    
+    input.begin_new_frame();
+
     SDL_Event E;
     while (SDL_PollEvent(&E))
     {
@@ -50,18 +57,28 @@ void Game::processEvents()
             case SDL_MOUSEBUTTONUP:
             case SDL_MOUSEWHEEL:
             case SDL_MOUSEMOTION:
-                input.process_mouse_event(E);
+                if (imgui_IO->WantCaptureMouse){
+                    ImGui_ImplSDL2_ProcessEvent(&E);
+                } else {
+                    input.process_mouse_event(E);
+                }
                 break;
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                input.process_keyboard_event(E.key);
+                if (imgui_IO->WantCaptureKeyboard){
+                    ImGui_ImplSDL2_ProcessEvent(&E);
+                } else {
+                    input.process_keyboard_event(E.key);
+                }
                 break;
             case SDL_TEXTINPUT:
+                if (imgui_IO->WantCaptureKeyboard){
+                    ImGui_ImplSDL2_ProcessEvent(&E);
+                }
                 break;
         }
     }
 }
-
 
 void Game::initImGui()
 {
@@ -125,7 +142,7 @@ inline static const char* get_MSAA_str(Game::MSAALevel L)
 
 void Game::showConfig()
 {
-    ImGui::Begin("Config", &escape);
+    ImGui::Begin("Config", &open_menu);
 
     ImGui::Checkbox("Show Info", &showInfo);
 
@@ -420,27 +437,31 @@ void Game::updateGameLogic()
 {
     static float accumulated = 0.0f;
     accumulated += dt;
+    InputHandler &input = InputHandler::get();
 
     while (accumulated >= tick_rate)
     {
         player.reset_rotation();
         processEvents();
-        
-        if (escape)
-            goto skipLoop;
-        
-        checkSelectableObject();
-        player.move(tick_rate);
-        player.rotate(tick_rate);
-        updatePhysics();
-        if (player.should_sound_footstep() && !Mix_Playing(0))
-            Mix_PlayChannel(0, footsteps_wave, 0);
 
-skipLoop:
+        if (input.is_key_just_released(SDLK_ESCAPE)) {
+            open_menu = !open_menu;
+            SDL_SetRelativeMouseMode(open_menu ? SDL_TRUE : SDL_FALSE);
+        }
+        
+        if (!open_menu)
+        {
+            checkSelectableObject();
+            player.move(tick_rate);
+            player.rotate(tick_rate);
+            updatePhysics();
+            if (player.should_sound_footstep() && !Mix_Playing(0))
+                Mix_PlayChannel(0, footsteps_wave, 0);
+        }
+
         accumulated -= tick_rate;
         ticks++;
-        if (!(ticks%20))
-            fps = 1.0/dt;
+        fps = 1.0/dt;
     }
 
     player.makeView();
@@ -474,7 +495,7 @@ void Game::mainLoop()
 
         updateGameLogic();
 
-        if(escape)
+        if(open_menu)
             showConfig();
 
         infoWindow();

@@ -34,7 +34,6 @@ class Game
 
     Window win;
 
-
     uint64_t frame = 0;
     uint64_t ticks = 0;
     float runtime = 0.0;
@@ -54,7 +53,8 @@ class Game
     Timer frame_timer;
 
     bool pause_rendering = false;
-    bool escape          = false;
+    bool open_menu       = false;
+    
     bool vsync           = false;
     bool showInfo        = false;
     float mouse_sensitivity = 10.0f;

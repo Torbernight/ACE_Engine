@@ -11,6 +11,14 @@ enum MouseButton {
     MouseButton_Center
 };
 
+enum KeyState 
+{
+    KEY_NOT_PRESSED = 0, // key is not currently being pressed
+    KEY_PRESSED     = 1, // key was just pressed
+    KEY_HELD        = 2, // key is being pressed for more than one frame
+    KEY_RELEASED    = 3  // key is just being released
+};
+
 /* 
  * Singleton class for input handling
 **/
@@ -24,8 +32,18 @@ class InputHandler
         return singleton;
     }
 
+    void begin_new_frame();
+
     // check wether a given key is pressed
     bool is_key_pressed(Key k) const;
+
+    bool is_key_held(Key k) const;
+
+    bool is_key_just_pressed(Key k) const;
+    
+    bool is_key_just_released(Key k) const;
+    
+    bool is_key_not_pressed(Key k) const;
 
     bool is_moused_button_pressed(MouseButton b) const;
 
@@ -52,7 +70,7 @@ class InputHandler
 
     struct {
         bool enabled = true;
-        std::map<Key, bool> keys;
+        std::map<Key, KeyState> keys;
         int mouse_x, mouse_y;
         int mouse_delta_x, mouse_delta_y;
         int mouse_button_left, mouse_button_right, mouse_button_center;

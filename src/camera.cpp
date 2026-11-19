@@ -4,7 +4,7 @@
 static constexpr glm::vec3 world_up = glm::vec3(0.0,1.0,0.0);
 
 inline static
-glm::vec3 move2D(const glm::vec3& v)
+glm::vec3 normalize2D(const glm::vec3& v)
 {
     return glm::normalize(glm::vec3(v.x, 0.0f, v.z));
 }
@@ -35,9 +35,9 @@ void Camera::move(float dt)
     bool sprint = input.is_key_pressed(SDLK_LSHIFT);
 
     m.acc = 
-    (float)(forward-backward)*move2D(m.front)
+    (float)(forward-backward)*normalize2D(m.front)
     + 
-    (float)(right-left)*move2D(m.right)
+    (float)(right-left)*normalize2D(m.right)
     + 
     (float)(up-down)*world_up;
 

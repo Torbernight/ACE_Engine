@@ -4,7 +4,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "geometry/frustum.hpp"
-#include "object.hpp"
+#include "scene/object.hpp"
 
 class Camera
 {

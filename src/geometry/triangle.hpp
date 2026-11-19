@@ -11,9 +11,10 @@ struct triangle
 
     glm::vec3 get_normal() const 
     {
-        glm::vec3 AB = B - A;
-        glm::vec3 CB = C - B;
-        return glm::normalize(glm::cross(AB,CB));
+        using namespace glm;
+        vec3 AB = B - A;
+        vec3 CB = C - B;
+        return normalize(cross(AB,CB));
     }
 
     plane get_plane() const 

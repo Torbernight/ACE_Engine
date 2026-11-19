@@ -12,7 +12,7 @@ glm::vec3 normalize2D(const glm::vec3& v)
 void Camera::makeProj()
 {
     m.proj = glm::perspective(m.FOVy, m.aspect, m.zNear, m.zFar);
-    m.view_frustum.create(m.pos, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
+    m.view_frustum.create(m.pos, {m.right, m.up, m.front}, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
 float Camera::footstep_offset() const
@@ -103,7 +103,7 @@ void Camera::makeView()
     glm::vec3 P = m.pos;
     P.y += footstep_offset();
     m.view = glm::lookAt(P, P+m.front, world_up);
-    m.view_frustum.create(P, m.front, m.up, m.right, m.zNear, m.zFar, m.FOVy, m.aspect);
+    m.view_frustum.create(P, {m.right, m.up, m.front}, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
 glm::mat4 Camera::get_transform() const

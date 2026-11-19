@@ -2,8 +2,83 @@
 #include <thread>
 #include <algorithm>
 #include "scene.hpp"
-#include "scene_aux.hpp"
 #include "../renderer/shader_compiler.hpp"
+
+glm::vec3 castVector3(const aiVector3D &V)
+{
+    return glm::vec3(V.x, V.y, V.z);
+}
+
+glm::vec3 castVector3(const aiColor3D &V)
+{
+    return glm::vec3(V.r, V.g, V.b);
+}
+
+//glm::vec4 castVector4(const aiColor3D &V)
+//{
+//    return glm::vec4(V.r, V.g, V.b, 1.0f);
+//}
+
+glm::vec2 castVector2(const aiVector3D &V)
+{
+    return glm::vec2(V.x, V.y);
+}
+
+glm::mat4 castMatrix4x4(const aiMatrix4x4 &M)
+{
+    glm::mat4 Result(1);
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            Result[i][j] = M[j][i];
+        }
+    }
+    return Result;
+}
+
+void process_faces(const aiMesh* Mesh, std::vector<uint32_t> *indices)
+{
+    for (int n = 0; n < Mesh->mNumFaces; n++)
+    {
+        const aiFace &F = Mesh->mFaces[n];
+        for(int i = 0; i < F.mNumIndices; i++)
+        {
+            indices->push_back(F.mIndices[i]);
+        }
+    }
+}
+
+void process_vertices(const aiMesh* mesh, std::vector<Renderer::Mesh::Vertex> *vertices)
+{
+    for (int n = 0; n < mesh->mNumVertices; n++)
+    {
+        Renderer::Mesh::Vertex V;
+        V.position  = castVector3(mesh->mVertices[n]);
+        V.texcoord  = castVector2(mesh->mTextureCoords[0][n]);
+        V.normal    = castVector3(mesh->mNormals[n]);
+        V.tangent   = castVector3(mesh->mTangents[n]);
+        V.bitangent = castVector3(mesh->mBitangents[n]);
+        vertices->push_back(V);
+    }
+}
+
+inline static float horizontal_fov_2_vertical_fov(float hfov, float aspect)
+{
+    return 2 * glm::atan(glm::tan(hfov*0.5f)*aspect);
+}
+
+
+aiMatrix4x4 getTransform(const aiString& nodeName, const aiScene* Scene)
+{
+    aiMatrix4x4 Transform = aiMatrix4x4({1.0,1.0,1.0},{0.0,0.0,0.0,0.0},{0.0,0.0,0.0});
+    aiNode* Node = Scene->mRootNode->FindNode(nodeName);
+
+    while(nullptr != Node) {
+        Transform = Transform * Node->mTransformation;
+        Node = Node->mParent;
+    }
+
+    return Transform;
+}
 
 void Scene::combine_as_instance(Renderer::Mesh& A, Renderer::Mesh& Instance)
 {
@@ -50,9 +125,9 @@ Renderer::Mesh Scene::process_mesh(const aiMesh* mesh, const aiMatrix4x4& transf
     std::thread Tfaces(process_faces, mesh, &M.m.indices);
     std::thread Tverts(process_vertices, mesh, &M.m.vertices);
 
-    M.m.bounding_box.max = cast3D(mesh->mAABB.mMax);
-    M.m.bounding_box.min = cast3D(mesh->mAABB.mMin);
-    M.m.transform = cast4x4(transform);
+    M.m.bounding_box.max = castVector3(mesh->mAABB.mMax);
+    M.m.bounding_box.min = castVector3(mesh->mAABB.mMin);
+    M.m.transform = castMatrix4x4(transform);
     M.m.materialIndex = mesh->mMaterialIndex;
 
     Tfaces.join();
@@ -60,9 +135,10 @@ Renderer::Mesh Scene::process_mesh(const aiMesh* mesh, const aiMatrix4x4& transf
     return M;
 }
 
-#define XYZ(V) V.x << " " << V.y << " " << V.z
+/* 
+#define print_XYZ(V) V.x << " " << V.y << " " << V.z
 
-void process_metadata(const aiMetadata *Metadata, int level = 0)
+void print_metadata(const aiMetadata *Metadata, int level = 0)
 {
     for (int n = 0; n < Metadata->mNumProperties; n++){
         void* data = Metadata->mValues[n].mData;
@@ -90,11 +166,11 @@ void process_metadata(const aiMetadata *Metadata, int level = 0)
                 std::cout << "type AISTRING: " << Metadata->mKeys[n].C_Str() << ": " << ((aiString*)data)->C_Str() << "\n";
                 break;
             case AI_AIVECTOR3D:
-                std::cout << "type AIVECTOR3D: " << Metadata->mKeys[n].C_Str() << ": " << XYZ((*(aiVector3D*)data)) << "\n";
+                std::cout << "type AIVECTOR3D: " << Metadata->mKeys[n].C_Str() << ": " << print_XYZ((*(aiVector3D*)data)) << "\n";
                 break;
             case AI_AIMETADATA:
                 std::cout << "\ttype AIMETADATA:\n";
-                process_metadata((aiMetadata*)data, level+1);
+                print_metadata((aiMetadata*)data, level+1);
                 break;
             case AI_INT64:
                 std::cout << "\ttype INT64: " << Metadata->mKeys[n].C_Str() << ": " << *(int64_t*)data << "\n";
@@ -107,7 +183,11 @@ void process_metadata(const aiMetadata *Metadata, int level = 0)
             break;
         }
     }
-}
+} 
+
+#undef print_XYZ
+
+*/
 
 void Scene::process_node(const aiNode* Node, const aiScene* Scene)
 {
@@ -133,7 +213,6 @@ void Scene::process_node(const aiNode* Node, const aiScene* Scene)
     for (int n = 0; n < Node->mNumChildren; n++)
         process_node(Node->mChildren[n], Scene, Node->mTransformation);
 }
-#undef XYZ
 
 void Scene::process_node(const aiNode* Node, const aiScene* Scene, const aiMatrix4x4 &ParentTransform)
 {
@@ -195,13 +274,13 @@ void Scene::load_camera(const aiScene* S)
         aiMatrix4x4 Transform = getTransform(aiCam.mName, S);
         aiMatrix3x3 vTransform = aiMatrix3x3(Transform);
         Camera::members& cam = m.defaultCamera.m;
-        cam.pos = cast3D(Transform * aiCam.mPosition);
+        cam.pos = castVector3(Transform * aiCam.mPosition);
         cam.zNear = aiCam.mClipPlaneNear;
         cam.zFar = aiCam.mClipPlaneFar;
         cam.aspect = aiCam.mAspect;
-        cam.FOVy = h_fov_to_v_fov(aiCam.mHorizontalFOV, cam.aspect);
-        cam.up =    glm::normalize(cast3D(vTransform * aiCam.mUp));
-        cam.front = glm::normalize(cast3D(vTransform * aiCam.mLookAt));
+        cam.FOVy = horizontal_fov_2_vertical_fov(aiCam.mHorizontalFOV, cam.aspect);
+        cam.up =    glm::normalize(castVector3(vTransform * aiCam.mUp));
+        cam.front = glm::normalize(castVector3(vTransform * aiCam.mLookAt));
         cam.right = glm::normalize(glm::cross(cam.front, cam.up));
     }
     else{
@@ -218,12 +297,12 @@ void Scene::load_lights(const aiScene* S)
     {
         const aiLight *iLight = S->mLights[n];
         aiMatrix4x4 Transform = getTransform(iLight->mName, S);
-        this->Lights[n].position = cast3D(Transform * iLight->mPosition);
+        this->Lights[n].position = castVector3(Transform * iLight->mPosition);
         this->Lights[n].attenuation.x = iLight->mAttenuationConstant;
         this->Lights[n].attenuation.y = iLight->mAttenuationLinear;
         this->Lights[n].attenuation.z = iLight->mAttenuationQuadratic;
-        this->Lights[n].color = cast3D(iLight->mColorDiffuse);
-        this->Lights[n].direction = glm::normalize(cast3D(aiMatrix3x3(Transform) * iLight->mDirection));
+        this->Lights[n].color = castVector3(iLight->mColorDiffuse);
+        this->Lights[n].direction = glm::normalize(castVector3(aiMatrix3x3(Transform) * iLight->mDirection));
         this->Lights[n].inner_cone = iLight->mAngleInnerCone;
         this->Lights[n].outer_cone = iLight->mAngleOuterCone;
         this->Lights[n].type = (unsigned int)iLight->mType;
@@ -403,9 +482,6 @@ void Scene::load_DeferredShader(const path& vertex, const path& fragment)
 
     m.vShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangVertex, m.deferred_vShader));
     m.fShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangFragment, m.deferred_fShader));
-
-    //m.vShader.loadBinary(vertex);
-    //m.fShader.loadBinary(fragment);
 
     for(int i = 0; i < m.init_constants.size(); i++)
     {

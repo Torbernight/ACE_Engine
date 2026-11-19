@@ -38,16 +38,20 @@ struct frustum
         return glm::normalize(glm::cross(a,b));
     }
 
-    void create(const glm::vec3& camPos, const glm::vec3& camForward, const glm::vec3& camUp, const glm::vec3& camRight, float nearDistance, float farDistance, float fov, float aspect)
+    void create(const glm::vec3& camPos, const glm::mat3& cameraBasis, float nearPlane, float farPlane, float FOV, float aspectRatio)
     {
         using namespace glm;
 
-        float halfVSide = farDistance * tanf(fov * 0.5f);
-        float halfHSide = halfVSide * aspect;
-        vec3 frontMultFar = farDistance * camForward;
+        const vec3& camRight   = cameraBasis[0];
+        const vec3& camUp      = cameraBasis[1]; 
+        const vec3& camForward = cameraBasis[2];
+
+        float halfVSide = farPlane * tanf(FOV * 0.5f);
+        float halfHSide = halfVSide * aspectRatio;
+        vec3 frontMultFar = farPlane * camForward;
 
         near.normal = camForward;
-        near.d = dot(camPos + nearDistance * camForward, near.normal);
+        near.d = dot(camPos + nearPlane * camForward, near.normal);
         far.normal = -camForward;
         far.d = dot(camPos + frontMultFar, far.normal);
         right.normal = ncross(frontMultFar - camRight * halfHSide, camUp);

@@ -1,6 +1,6 @@
 #include "object.hpp"
-#include "camera.hpp"
-#include "scene/scene.hpp"
+#include "../camera.hpp"
+#include "scene.hpp"
 
 void DynamicObject::grab(void* player)
 {

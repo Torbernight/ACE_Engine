@@ -12,7 +12,7 @@
 
 #include "../camera.hpp"
 #include "../renderer/mesh.hpp"
-#include "../object.hpp"
+#include "object.hpp"
 #include "../renderer/material.hpp"
 #include "../renderer/light.hpp"
 #include "../renderer/canvas_renderer.hpp"

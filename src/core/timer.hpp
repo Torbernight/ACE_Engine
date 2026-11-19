@@ -3,15 +3,8 @@
 #include <chrono>
 
 typedef std::chrono::high_resolution_clock Time;
-typedef std::chrono::milliseconds ms;
 typedef std::chrono::duration<float> fsec;
 typedef std::chrono::_V2::system_clock::time_point TimePoint;
-
-inline static
-TimePoint get_time()
-{
-    return Time::now();
-}
 
 struct Timer
 {
@@ -21,12 +14,12 @@ struct Timer
 
     void Start()
     {
-        T0 = get_time();
+        T0 = Time::now();
     }
 
     float Count()
     {
-        T1 = get_time();
+        T1 = Time::now();
         T = (T1 - T0);
         return T.count();
     }

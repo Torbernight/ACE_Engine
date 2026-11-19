@@ -482,12 +482,14 @@ void Game::endFrame()
     imguiFrameEnd();
     win.swapBuffer();
     frame++;
-    runtime += (dt = frame_timer.Count());
+    dt = frame_timer.Count();
+    runtime += dt;
 }
 
 void Game::end_norender()
 {
-    runtime += (dt = frame_timer.Count());
+    dt = frame_timer.Count();
+    runtime += dt;
 }
 
 void Game::mainLoop()

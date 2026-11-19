@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "geometry/triangle.hpp"
+#include "../geometry/triangle.hpp"
 
 class Object
 {

@@ -2,7 +2,7 @@
 
 #include "../scene/scene.hpp"
 #include "../camera.hpp"
-#include "../object.hpp"
+#include "../scene/object.hpp"
 
 void test_player_collision(Camera &player, Scene* gameScene, float tick_rate);
 void test_narrow_collision(const StaticObject& obj, Camera& player, float tick_rate);

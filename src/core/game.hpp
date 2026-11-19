@@ -6,10 +6,14 @@
 #include "SDL_events.h"
 #include "window.hpp"
 
+#include <imgui/imgui.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
+#include <imgui/backends/imgui_impl_sdl2.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+
 #include "../renderer/vertexArray.hpp"
 #include "../renderer/buffer.hpp"
-#include "../misc/imgui_include.hpp"
-#include "../misc/timer.hpp"
+#include "timer.hpp"
 #include "../camera.hpp"
 #include "../scene/scene.hpp"
 

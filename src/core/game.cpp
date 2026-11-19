@@ -2,14 +2,17 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <execution>
+
 #include "SDL_keycode.h"
 #include "SDL_mouse.h"
-#include "backends/imgui_impl_sdl2.h"
-#include "imgui.h"
-#include "input/input.hpp"
-#include "physics/physics.hpp"
-#include "debug/debug.hpp"
-#include "renderer/material.hpp"
+
+#include "imgui/backends/imgui_impl_sdl2.h"
+#include "imgui/imgui.h"
+
+#include "../input/input.hpp"
+#include "../physics/physics.hpp"
+#include "../debug/debug.hpp"
+#include "../renderer/material.hpp"
 
 #include "game.hpp"
 

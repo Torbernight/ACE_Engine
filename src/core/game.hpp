@@ -5,13 +5,13 @@
 
 #include "SDL_events.h"
 #include "window.hpp"
-#include "renderer/vertexArray.hpp"
-#include "renderer/buffer.hpp"
 
-#include "misc/imgui_include.hpp"
-#include "misc/timer.hpp"
-#include "camera.hpp"
-#include "scene/scene.hpp"
+#include "../renderer/vertexArray.hpp"
+#include "../renderer/buffer.hpp"
+#include "../misc/imgui_include.hpp"
+#include "../misc/timer.hpp"
+#include "../camera.hpp"
+#include "../scene/scene.hpp"
 
 struct StateUBO
 {

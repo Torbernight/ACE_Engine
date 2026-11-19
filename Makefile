@@ -10,7 +10,7 @@ CFLAGS:=-c -Wall $(DBGFLAGS) -MMD
 CXXFLAGS:=-c -Wall $(DBGFLAGS) -MMD -fms-extensions
 
 CSOURCE := $(wildcard src/*.c)
-CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/input/*.cpp) $(wildcard src/physics/*.cpp) $(wildcard src/scene/*.cpp) $(wildcard src/renderer/*.cpp) $(wildcard include/imgui/*.cpp) include/imgui/backends/imgui_impl_sdl2.cpp include/imgui/backends/imgui_impl_opengl3.cpp include/imgui/misc/cpp/imgui_stdlib.cpp
+CXXSOURCE := $(wildcard src/*.cpp) $(wildcard src/core/*.cpp) $(wildcard src/input/*.cpp) $(wildcard src/physics/*.cpp) $(wildcard src/scene/*.cpp) $(wildcard src/renderer/*.cpp) $(wildcard include/imgui/*.cpp) include/imgui/backends/imgui_impl_sdl2.cpp include/imgui/backends/imgui_impl_opengl3.cpp include/imgui/misc/cpp/imgui_stdlib.cpp
 SOURCE = $(CSOURCE) $(CXXSOURCE)
 
 EDITOR_SOURCE = $(filter-out src/example/example.cpp, $(SOURCE)) $(wildcard src/example/editor/*.cpp)

@@ -1,10 +1,8 @@
 .vscode/
-src/*.o
-src/*.d
-src/bsp/
-src/example/*.o
-src/example/*.d
+.clangd
 imgui.ini
-*.out
 assets/*.blend1
 notes/
+*.o 
+*.d
+*.out

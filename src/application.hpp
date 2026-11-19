@@ -1,5 +1,6 @@
 #pragma once
 
+#include <SDL_events.h>
 #include "window.hpp"
 
 class Application 
@@ -13,7 +14,7 @@ class Application
     Application(const std::string_view& title, int window_w, int window_h, int flags);
     Application(const std::string_view& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
     
-    virtual void processEvents() = 0;
+    void processEvents();
 
     virtual void mainLoop() = 0;
 
@@ -24,5 +25,7 @@ class Application
 
     protected:
     void m_init();
+
+    virtual void processWindowEvents(const SDL_WindowEvent &E) {}
 
 };

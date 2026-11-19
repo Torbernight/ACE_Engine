@@ -4,7 +4,7 @@
 #include <SDL_mixer.h>
 
 #include "SDL_events.h"
-#include "application.hpp"
+#include "window.hpp"
 #include "renderer/vertexArray.hpp"
 #include "renderer/buffer.hpp"
 
@@ -28,43 +28,60 @@ struct CameraUBO
     float zFar;
 };
 
-class Game : public Application 
+class Game
 {
     public:
-    Game(int win_w, int win_h) : Application("MyGame", win_w, win_h, SDL_WINDOW_RESIZABLE) {}
+
+    Window win;
+
 
     uint64_t frame = 0;
     uint64_t ticks = 0;
     float runtime = 0.0;
-    float dt = 0.0;
-    float fps = 0.0;
+    float dt      = 0.0;
+    float fps     = 0.0;
 
-    Mix_Chunk *footsteps_wave = nullptr;
-    ImGuiIO* imgui_IO = nullptr;
+    Mix_Chunk *footsteps_wave = nullptr; // TODO implementar sistema de audio aparte que maneje esto
+    ImGuiIO* imgui_IO         = nullptr;
 
     Camera player;
     Scene *gameScene = nullptr;
 
     Renderer::Buffer TransformBuffer = Renderer::Buffer(GL_UNIFORM_BUFFER);
-    Renderer::Buffer Camera_Buffer = Renderer::Buffer(GL_UNIFORM_BUFFER);
-    Renderer::Buffer State_Buffer = Renderer::Buffer(GL_UNIFORM_BUFFER);
+    Renderer::Buffer Camera_Buffer   = Renderer::Buffer(GL_UNIFORM_BUFFER);
+    Renderer::Buffer State_Buffer    = Renderer::Buffer(GL_UNIFORM_BUFFER);
 
     Timer frame_timer;
 
     bool pause_rendering = false;
-    bool escape = false;
-    bool vsync = false;
-    bool showInfo = false;
+    bool escape          = false;
+    bool vsync           = false;
+    bool showInfo        = false;
     float mouse_sensitivity = 10.0f;
-    float tick_rate = 1.0/60.0;
+    float tick_rate         = 1.0/60.0;
+
     enum MSAALevel{
         MS_OFF,
         MS_2,
         MS_4,
         MS_8,
         MS_NUM_OPTIONS
-    } MSAA = MS_OFF;
+    } MSAA = MS_OFF; // TODO meter esto en un sistema de configuración
 
+
+    Game(const std::string& title, int window_w, int window_h);
+    Game(const std::string& title, int window_w, int window_h, int window_posx, int window_posy);
+    Game(const std::string& title, int window_w, int window_h, int flags);
+    Game(const std::string& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
+    
+    Game(Game&&)                 = delete;
+    Game(const Game&)            = delete;
+    Game& operator=(const Game&) = delete;
+    Game& operator=(Game&&)      = delete;
+
+
+    void processEvents();
+    void mainLoop();
 
     // initialization functions
     void initImGui();
@@ -73,7 +90,7 @@ class Game : public Application
     void initAudio();
     void init();
 
-    void processWindowEvents(const SDL_WindowEvent &event) override;
+    void processWindowEvents(const SDL_WindowEvent &event);
     
     void resizeWindow(int w, int h);
     void setVSync();
@@ -102,7 +119,6 @@ class Game : public Application
     inline void endFrame();
     inline void end_norender();
 
-    void mainLoop() override;
 
     void cleanup();
 };

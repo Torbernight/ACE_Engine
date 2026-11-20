@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <cfloat>
 #include <algorithm>
 #include <regex>

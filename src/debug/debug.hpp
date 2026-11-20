@@ -1,8 +1,7 @@
 #pragma once
 
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <SDL2/SDL.h>
-#include <iostream>
 
 inline static
 bool IsExtensionSupported(const char *name)

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstring>
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <SDL_assert.h>
 #include "texture_load.hpp"
 

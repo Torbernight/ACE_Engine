@@ -14,7 +14,7 @@
 #include "../renderer/vertexArray.hpp"
 #include "../renderer/buffer.hpp"
 #include "timer.hpp"
-#include "../camera.hpp"
+#include "../player.hpp"
 #include "../scene/scene.hpp"
 
 struct StateUBO
@@ -47,7 +47,7 @@ class Game
     Mix_Chunk *footsteps_wave = nullptr; // TODO implementar sistema de audio aparte que maneje esto
     ImGuiIO* imgui_IO         = nullptr;
 
-    Camera player;
+    Player player;
     Scene *gameScene = nullptr;
 
     Renderer::Buffer TransformBuffer = Renderer::Buffer(GL_UNIFORM_BUFFER);

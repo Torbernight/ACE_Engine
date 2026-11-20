@@ -6,7 +6,7 @@
 #include "geometry/frustum.hpp"
 #include "scene/object.hpp"
 
-class Camera
+class Player
 {
     public:
 

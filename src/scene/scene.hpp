@@ -10,13 +10,14 @@
 #include "../renderer/buffer.hpp"
 #include "../renderer/shader.hpp"
 
-#include "../camera.hpp"
+#include "../player.hpp"
 #include "../renderer/mesh.hpp"
 #include "object.hpp"
 #include "../renderer/material.hpp"
 #include "../renderer/light.hpp"
 #include "../renderer/canvas_renderer.hpp"
 #include "../renderer/cubemap_renderer.hpp"
+#include "../renderer/camera.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h> 
@@ -58,7 +59,7 @@ class Scene
         float Gamma = 2.2;
         float Exposure = 271.7570653294113;
         bool FXAA = true;
-    } postprocess;
+    } postprocess; // esto NO debería estar acá
 
     static Scene* import_scene(const path& pFile);
 
@@ -104,12 +105,12 @@ class Scene
 
     const glm::vec3& get_defaultCamPos() const
     {
-        return m.defaultCamera.m.pos;
+        return m.cameras[0].get_position();
     }
 
-    const Camera& get_defaultCamera() const
+    const Renderer::Camera& get_defaultCamera() const
     {
-        return m.defaultCamera;
+        return m.cameras[0];
     }
 
     unsigned int getMaxInstances() const
@@ -133,7 +134,7 @@ class Scene
         Renderer::Shader fShader;
         Renderer::shaderProgram sProgram;
 
-        Camera defaultCamera;
+        std::vector<Renderer::Camera> cameras;
 
         path scene_vShader = "";
         path scene_fShader = "";

@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <thread>
 #include <algorithm>
 #include "scene.hpp"
@@ -272,19 +272,19 @@ void Scene::load_camera(const aiScene* S)
     {
         const auto& aiCam = *S->mCameras[0];
         aiMatrix4x4 Transform = getTransform(aiCam.mName, S);
-        aiMatrix3x3 vTransform = aiMatrix3x3(Transform);
-        Camera::members& cam = m.defaultCamera.m;
-        cam.pos = castVector3(Transform * aiCam.mPosition);
-        cam.zNear = aiCam.mClipPlaneNear;
-        cam.zFar = aiCam.mClipPlaneFar;
-        cam.aspect = aiCam.mAspect;
-        cam.FOVy = horizontal_fov_2_vertical_fov(aiCam.mHorizontalFOV, cam.aspect);
-        cam.up =    glm::normalize(castVector3(vTransform * aiCam.mUp));
-        cam.front = glm::normalize(castVector3(vTransform * aiCam.mLookAt));
-        cam.right = glm::normalize(glm::cross(cam.front, cam.up));
-    }
-    else{
-        m.defaultCamera.m.pos = glm::vec3(0.0/0.0);
+        aiMatrix3x3 normalTransform = aiMatrix3x3(Transform);
+        for(int i = 0; i < S->mNumCameras; i++)
+        {
+            Renderer::Camera camera;
+            camera.set_position(castVector3(Transform * aiCam.mPosition));
+            camera.set_near_plane(aiCam.mClipPlaneNear);
+            camera.set_far_plane(aiCam.mClipPlaneFar);
+            camera.set_aspect_ratio(aiCam.mAspect);
+            camera.set_FOV(horizontal_fov_2_vertical_fov(aiCam.mHorizontalFOV, aiCam.mAspect));
+            camera.set_basis(glm::normalize(castVector3(normalTransform * aiCam.mUp)), glm::normalize(castVector3(normalTransform * aiCam.mLookAt)));
+            m.cameras.push_back(camera);
+        }
+        //Player::members& cam = m.defaultCamera.m;
     }
 }
 

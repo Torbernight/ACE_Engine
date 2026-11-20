@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include "shader_compiler.hpp"
 #include "texture_load.hpp"
 #include "cubemap_renderer.hpp"

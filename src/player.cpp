@@ -1,4 +1,4 @@
-#include "camera.hpp"
+#include "player.hpp"
 #include "input/input.hpp"
 
 static constexpr glm::vec3 world_up = glm::vec3(0.0,1.0,0.0);
@@ -9,18 +9,18 @@ glm::vec3 normalize2D(const glm::vec3& v)
     return glm::normalize(glm::vec3(v.x, 0.0f, v.z));
 }
 
-void Camera::makeProj()
+void Player::makeProj()
 {
     m.proj = glm::perspective(m.FOVy, m.aspect, m.zNear, m.zFar);
     m.view_frustum.create(m.pos, {m.right, m.up, m.front}, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
-float Camera::footstep_offset() const
+float Player::footstep_offset() const
 {
     return std::sin(M_PIf*m.footstep_freq*m.footstep_timer)*m.footstep_amp;
 }
 
-void Camera::move(float dt)
+void Player::move(float dt)
 {
     using namespace glm;
 
@@ -91,14 +91,14 @@ void Camera::move(float dt)
     make_AABB();
 }
 
-void Camera::make_AABB()
+void Player::make_AABB()
 {
     glm::vec3 bcenter = glm::vec3(m.pos.x, m.pos.y-0.845f, m.pos.z);
     glm::vec3 bbounds = glm::vec3(0.25f, 0.845f, 0.25f);
     this->m.bounding_box = AABB(bcenter-bbounds, bcenter+bbounds);
 }
 
-void Camera::makeView()
+void Player::makeView()
 {
     glm::vec3 P = m.pos;
     P.y += footstep_offset();
@@ -106,7 +106,7 @@ void Camera::makeView()
     m.view_frustum.create(P, {m.right, m.up, m.front}, m.zNear, m.zFar, m.FOVy, m.aspect);
 }
 
-glm::mat4 Camera::get_transform() const
+glm::mat4 Player::get_transform() const
 {
     return glm::mat4(
         m.right.x, m.right.y, m.right.z, 0.0f,
@@ -116,7 +116,7 @@ glm::mat4 Camera::get_transform() const
     );
 }
 
-void Camera::rotate(float dt)
+void Player::rotate(float dt)
 {
 
     InputHandler &input = InputHandler::get();

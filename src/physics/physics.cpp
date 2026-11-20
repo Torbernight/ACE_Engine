@@ -15,7 +15,7 @@ void clampnan(glm::vec3 &V){
 }
 
 
-void test_player_collision(Camera &player, Scene* gameScene, float tick_rate)
+void test_player_collision(Player &player, Scene* gameScene, float tick_rate)
 {
     using namespace glm;
 
@@ -44,7 +44,7 @@ void test_player_collision(Camera &player, Scene* gameScene, float tick_rate)
 }
 
 
-void test_narrow_collision(const StaticObject& obj, Camera& player, float tick_rate)
+void test_narrow_collision(const StaticObject& obj, Player& player, float tick_rate)
 {
     using namespace glm;
     for (const auto &tri : obj.collision_mesh)
@@ -55,7 +55,7 @@ void test_narrow_collision(const StaticObject& obj, Camera& player, float tick_r
     }
 }
 
-void resolve_collision(const triangle &tri, const glm::vec3& normal, Camera& player, float tick_rate)
+void resolve_collision(const triangle &tri, const glm::vec3& normal, Player& player, float tick_rate)
 {
     using namespace glm;
 

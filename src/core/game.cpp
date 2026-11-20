@@ -1,4 +1,4 @@
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <glm/glm.hpp>
 #include <algorithm>
 #include <execution>
@@ -6,6 +6,7 @@
 #include "SDL_keycode.h"
 #include "SDL_mouse.h"
 
+#include "SDL_video.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
 #include "imgui/imgui.h"
 
@@ -247,11 +248,9 @@ void Game::initSDLParameters()
 
 void Game::init()
 {
-    glewExperimental = GL_TRUE;
-    int status = glewInit();
-    if (status != GLEW_OK){
-        std::cerr << "Fatal error: couldn't initialize GLEW library:\n\t" << glewGetErrorString(status) << std::endl;
-    }
+    int version = gladLoadGL((GLADloadfunc)SDL_GL_GetProcAddress);
+    printf("loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+
     glClearColor(0.3, 0.5, 0.4, 1.0);
 
     initSDLParameters();

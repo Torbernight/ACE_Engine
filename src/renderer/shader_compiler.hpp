@@ -96,6 +96,18 @@ struct shader_source
         loadFile(P);
     }
 
+    shader_source(EShLanguage Stage, const std::filesystem::path& P, const std::string& prefix)
+    : stage(Stage)
+    {
+        loadFile(P);
+        if (prefix.size() > 0)
+        {
+            auto first_newline = source.find_first_of('\n'); // find the position of the first newline (just after the version directive)
+            source.insert(source.begin()+first_newline+1, prefix.begin(), prefix.end()); // insert prefix after the version directive
+        }
+    }
+
+
     void loadFile(const std::filesystem::path& P)
     {
             std::ifstream input(P.c_str(), std::ios_base::ate);
@@ -118,20 +130,20 @@ ShaderStage getStage(EShLanguage lang)
     switch(lang)
     {
         case EShLangVertex:
-            return Vertex;
+            return ShaderStage_Vertex;
         case EShLangFragment:
-            return Fragment;
+            return ShaderStage_Fragment;
         case EShLangCompute:
-            return Compute;
+            return ShaderStage_Compute;
         case EShLangGeometry:
-            return Geometry;
+            return ShaderStage_Geometry;
         case EShLangTessEvaluation:
-            return Tess_Evaluation;
+            return ShaderStage_Tess_Evaluation;
         case EShLangTessControl:
-            return Tess_Control;
+            return ShaderStage_Tess_Control;
         default:
             std::cerr << "----------\nWARNING: unidentified EShLanguage value\n----------\n";
-            return Vertex;
+            return ShaderStage_Vertex;
     }
 }
 

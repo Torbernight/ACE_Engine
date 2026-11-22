@@ -1,4 +1,5 @@
 #include "player.hpp"
+#include "core/settings.hpp"
 #include "input/input.hpp"
 
 static constexpr glm::vec3 world_up = glm::vec3(0.0,1.0,0.0);
@@ -119,13 +120,17 @@ glm::mat4 Player::get_transform() const
 void Player::rotate(float dt)
 {
 
+    SettingsManager &settings = SettingsManager::get();
+
+    float mouse_sensitivity = settings["mouse sensitivity"]->as_float();
+
     InputHandler &input = InputHandler::get();
 
     int xrel,yrel;
     input.get_mouse_delta(&xrel, &yrel);
 
     glm::vec2 r(xrel, -yrel);
-    m.delta_rotation = r*0.01f;
+    m.delta_rotation = r*0.01f*mouse_sensitivity;
 
     m.rotation += m.delta_rotation*dt;
 

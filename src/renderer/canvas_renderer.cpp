@@ -103,11 +103,11 @@ void CanvasRenderer::recompile_shader(ShaderStage stage)
 {
         shader_source src;
         Shader *S = nullptr;
-        if (stage == Fragment){
+        if (stage == ShaderStage_Fragment){
                 S = &m.fShader;
                 src = shader_source(EShLangFragment, m.fShader_Path);
 
-        } else if (stage == Vertex){
+        } else if (stage == ShaderStage_Vertex){
                 S = &m.vShader;
                 src = shader_source(EShLangVertex, m.vShader_Path);
         }
@@ -122,11 +122,11 @@ void CanvasRenderer::recompile_shader(ShaderStage stage, const std::vector<std::
 {
         shader_source src;
         Shader *S = nullptr;
-        if (stage == Fragment){
+        if (stage == ShaderStage_Fragment){
                 S = &m.fShader;
                 src = shader_source(EShLangFragment, m.fShader_Path);
 
-        } else if (stage == Vertex){
+        } else if (stage == ShaderStage_Vertex){
                 S = &m.vShader;
                 src = shader_source(EShLangVertex, m.vShader_Path);
         }

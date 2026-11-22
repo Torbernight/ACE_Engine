@@ -19,12 +19,12 @@ namespace Renderer
 
 enum ShaderStage
 {
-    Vertex = 0x8B31,
-    Tess_Control = 0x8E88,
-    Tess_Evaluation = 0x8E87,
-    Geometry = 0x8DD9,
-    Fragment = 0x8B30,
-    Compute = 0x91B9
+    ShaderStage_Vertex = 0x8B31,
+    ShaderStage_Tess_Control = 0x8E88,
+    ShaderStage_Tess_Evaluation = 0x8E87,
+    ShaderStage_Geometry = 0x8DD9,
+    ShaderStage_Fragment = 0x8B30,
+    ShaderStage_Compute = 0x91B9
 };
 
 
@@ -80,17 +80,17 @@ class Shader
     {
         switch(m.stage)
         {
-                case Vertex:
+                case ShaderStage_Vertex:
                         return "Vertex Shader";
-                case Fragment:
+                case ShaderStage_Fragment:
                         return "Fragment Shader";
-                case Tess_Control:
+                case ShaderStage_Tess_Control:
                         return "Tesselation Control Shader";
-                case Tess_Evaluation:
+                case ShaderStage_Tess_Evaluation:
                         return "Tesselation Evaluation Shader";
-                case Geometry:
+                case ShaderStage_Geometry:
                         return "Geometry Shader";
-                case Compute:
+                case ShaderStage_Compute:
                         return "Compute Shader";
         }
     }

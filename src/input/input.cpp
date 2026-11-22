@@ -13,6 +13,7 @@ void InputHandler::begin_new_frame()
             m.keys[key] = KEY_HELD;
         }
     }
+    m.mouse_delta_x = m.mouse_delta_y = 0;
 }
 
 bool InputHandler::is_key_pressed(Key k) const

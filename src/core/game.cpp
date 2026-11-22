@@ -14,6 +14,7 @@
 #include "../physics/physics.hpp"
 #include "../debug/debug.hpp"
 #include "../renderer/material.hpp"
+#include "settings.hpp"
 
 #include "game.hpp"
 
@@ -107,9 +108,8 @@ void Game::imguiFrameEnd()
 
 void Game::infoWindow()
 {
-    if (!showInfo)
-        return;
-    
+    SettingsManager& settings = SettingsManager::get();
+    bool& showInfo = settings["show info"]->as_bool();
     ImGui::Begin("Debug Info", &showInfo);
     ImGui::Text("Frame: %lu", frame);   
     ImGui::Text("Runtime: %fs", runtime);
@@ -146,12 +146,27 @@ inline static const char* get_MSAA_str(Game::MSAALevel L)
 
 void Game::showConfig()
 {
+    SettingsManager &settings = SettingsManager::get();
     ImGui::Begin("Config", &open_menu);
+
+    bool  &vsync = settings["vsync"]->as_bool();
+    bool  &showInfo = settings["show info"]->as_bool();
+    float &mouse_sensitivity = settings["mouse sensitivity"]->as_float();
+    float &Brightness = settings["brightness"]->as_float();
+    float &Contrast = settings["contrast"]->as_float();
+    float &Saturation = settings["saturation"]->as_float();
+    float &Gamma = settings["gamma"]->as_float();
+    float &Exposure = settings["exposure"]->as_float();
+    bool  &FXAA = settings["FXAA"]->as_bool();
+    float &far_plane = settings["far plane"]->as_float();
+    float &near_plane = settings["near plane"]->as_float();
+    float &FOV = settings["FOV"]->as_float();
 
     ImGui::Checkbox("Show Info", &showInfo);
 
-    if (ImGui::Checkbox("VSync", &vsync))
+    if (ImGui::Checkbox("VSync", &vsync)){
         setVSync();
+    }
 
     ImGui::SeparatorText("Controls");
 
@@ -160,12 +175,12 @@ void Game::showConfig()
     ImGui::SeparatorText("Post Processing");
 
     uint8_t postProc_Update = 0;
-    postProc_Update |= ImGui::DragFloat("Brightness", &gameScene->postprocess.Brightness, 0.025, -1.0, 2.0);
-    postProc_Update |= ImGui::DragFloat("Contrast", &gameScene->postprocess.Contrast, 0.025, 0.0, 2.0);
-    postProc_Update |= ImGui::DragFloat("Saturation", &gameScene->postprocess.Saturation, 0.025, 0.0, 4.0);
-    postProc_Update |= ImGui::DragFloat("Gamma", &gameScene->postprocess.Gamma, 0.025, 0.0, 4.0);
-    postProc_Update |= ImGui::DragFloat("Exposure", &gameScene->postprocess.Exposure, 0.1, -5.0, 5.0);
-    postProc_Update |= ImGui::Checkbox("FXAA", &gameScene->postprocess.FXAA);
+    postProc_Update |= ImGui::DragFloat("Brightness", &Brightness, 0.025, -1.0, 2.0);
+    postProc_Update |= ImGui::DragFloat("Contrast", &Contrast, 0.025, 0.0, 2.0);
+    postProc_Update |= ImGui::DragFloat("Saturation", &Saturation, 0.025, 0.0, 4.0);
+    postProc_Update |= ImGui::DragFloat("Gamma", &Gamma, 0.025, 0.0, 4.0);
+    postProc_Update |= ImGui::DragFloat("Exposure", &Exposure, 0.1, -5.0, 5.0);
+    postProc_Update |= ImGui::Checkbox("FXAA", &FXAA);
 
     ImGui::SeparatorText("Graphics Options");
 
@@ -177,9 +192,9 @@ void Game::showConfig()
         gameScene->get_DRenderer().reset(msaa_level);
         if (msaa_level){
             std::string MSAA_LEVEL_STR = "#define MSAA_LEVEL " + std::to_string(msaa_level) + "\n";
-            gameScene->reload_DeferredShader(Renderer::Fragment, {MSAA_LEVEL_STR});
+            gameScene->reload_DeferredShader(Renderer::ShaderStage_Fragment, {MSAA_LEVEL_STR});
         } else {
-            gameScene->reload_DeferredShader(Renderer::Fragment);
+            gameScene->reload_DeferredShader(Renderer::ShaderStage_Fragment);
         }
     }
 
@@ -242,8 +257,9 @@ void Game::initAudio()
 
 void Game::initSDLParameters()
 {
+    SettingsManager &settings = SettingsManager::get();
     SDL_SetRelativeMouseMode(SDL_TRUE);
-    SDL_GL_SetSwapInterval(vsync);
+    SDL_GL_SetSwapInterval(settings["vsync"]->as_bool());
 }
 
 void Game::init()
@@ -252,6 +268,20 @@ void Game::init()
     printf("loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
 
     glClearColor(0.3, 0.5, 0.4, 1.0);
+
+    SettingsManager &settings = SettingsManager::get();
+    settings.set("vsync", true);
+    settings.set("show info", false);
+    settings.set("mouse sensitivity", 10.0f);
+    settings.set("brightness", 0.604f);
+    settings.set("contrast", 1.828f);
+    settings.set("saturation", 0.686f);
+    settings.set("gamma", 2.2f);
+    settings.set("exposure", 271.7570653294113f);
+    settings.set("FXAA", true);
+    settings.set("far plane", 0.1f);
+    settings.set("near plane", 1000.0f);
+    settings.set("FOV", glm::radians(50.0f));
 
     initSDLParameters();
     initGLParameters();
@@ -321,6 +351,8 @@ void Game::resizeWindow(int w, int h)
 
 void Game::setVSync()
 {
+    SettingsManager &settings = SettingsManager::get();
+    bool vsync = settings["vsync"]->as_bool();
     if(SDL_GL_SetSwapInterval(vsync ? -1 : 0))
         SDL_GL_SetSwapInterval(vsync ? 1 : 0);
 }
@@ -448,7 +480,7 @@ void Game::updateGameLogic()
 
         if (input.is_key_just_released(SDLK_ESCAPE)) {
             open_menu = !open_menu;
-            SDL_SetRelativeMouseMode(open_menu ? SDL_TRUE : SDL_FALSE);
+            SDL_SetRelativeMouseMode(open_menu ? SDL_FALSE : SDL_TRUE);
         }
         
         if (!open_menu)
@@ -485,7 +517,7 @@ void Game::endFrame()
     runtime += dt;
 }
 
-void Game::end_norender()
+void Game::endFrameWithoutRendering()
 {
     dt = frame_timer.Count();
     runtime += dt;
@@ -493,19 +525,23 @@ void Game::end_norender()
 
 void Game::mainLoop()
 {
+    SettingsManager &settings = SettingsManager::get();
     while(!win.shouldClose())
     {
         startFrame();
 
         updateGameLogic();
 
-        if(open_menu)
+        if(open_menu){
             showConfig();
+        }
 
-        infoWindow();
+        if (settings["show info"]->as_bool()){
+            infoWindow();
+        }
         
         if (pause_rendering) {
-            end_norender();
+            endFrameWithoutRendering();
             continue;
         }
 

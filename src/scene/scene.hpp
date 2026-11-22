@@ -128,12 +128,10 @@ class Scene
         Renderer::CanvasRenderer DRenderer;
         Renderer::CanvasRenderer PostProcRenderer;
         Renderer::CubemapRenderer skybox;
-        std::vector<unsigned int> init_constants;
         std::vector<MaterialBuffer> Materials;
         Renderer::Shader vShader;
         Renderer::Shader fShader;
         Renderer::shaderProgram sProgram;
-
         std::vector<Renderer::Camera> cameras;
 
         path scene_vShader = "";
@@ -149,8 +147,8 @@ class Scene
         UBO(GL_UNIFORM_BUFFER), 
         mBuffer(GL_UNIFORM_BUFFER), 
         postProcess_buffer(GL_UNIFORM_BUFFER), 
-        vShader(Renderer::Vertex), 
-        fShader(Renderer::Fragment)
+        vShader(Renderer::ShaderStage_Vertex), 
+        fShader(Renderer::ShaderStage_Fragment)
         {}
     } m;
 
@@ -161,7 +159,6 @@ class Scene
     void render_static_objects(Renderer::Buffer &Transform_Buffer, size_t transform_offset);
     void render_dynamic_objects(Renderer::Buffer &Transform_Buffer, size_t transform_offset);
     static void getTexture(aiTextureType Type, const path& parentPath, const aiMaterial* M, MaterialBuffer& matBuff, Renderer::Material& Mat);
-    void set_max_instances();
     void clean_meshes();
     void load_materials(const aiScene* Scene, const path& pFile);
     void load_camera(const aiScene* Scene);

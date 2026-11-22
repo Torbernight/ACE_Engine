@@ -1,4 +1,4 @@
-#version 460
+#version 460 core
 
 #extension GL_GOOGLE_include_directive : enable
 
@@ -94,7 +94,7 @@ vec4 compute_texel()
     vec3 H = normalize(V + normal);
 
     vec3 color = vec3(0.0);
-    for(int i = 0; i < nLights; i++)
+    for(int i = 0; i < NLIGHTS; i++)
     {
         lightSource L = from_packed(uLightSources[i]);
         vec3 radiance = vec3(0);
@@ -151,7 +151,7 @@ vec4 compute_texel(int Sample)
     vec3 H = normalize(V + normal);
 
     vec3 color = vec3(0.0);
-    for(int i = 0; i < nLights; i++)
+    for(int i = 0; i < NLIGHTS; i++)
     {
         lightSource L = from_packed(uLightSources[i]);
         vec3 radiance = vec3(0);

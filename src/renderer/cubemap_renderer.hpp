@@ -38,9 +38,9 @@ class CubemapRenderer
     {
             switch(stage)
             {
-                    case Vertex:
+                    case ShaderStage_Vertex:
                             return &m.vShader;
-                    case Fragment:
+                    case ShaderStage_Fragment:
                             return &m.fShader;
                     default:
                         return nullptr;
@@ -64,7 +64,7 @@ class CubemapRenderer
             int w, h;
 
             members()
-            : vShader(Vertex), fShader(Fragment), VAO(1), VBO(0x8892) {}
+            : vShader(ShaderStage_Vertex), fShader(ShaderStage_Fragment), VAO(1), VBO(0x8892) {}
     } m;
 
     void initVAO();

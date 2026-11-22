@@ -1,5 +1,7 @@
 
-layout(constant_id = 0) const uint nLights = 1;
+#ifndef NLIGHTS
+#define NLIGHTS 1
+#endif
 
 #define LIGHT_DIRECTIONAL   0x1
 #define LIGHT_POINT         0x2
@@ -62,5 +64,5 @@ lightSource from_packed(in packed_lightSource P)
 
 layout(std140, binding = 2) uniform uLights
 {
-    packed_lightSource uLightSources[nLights];
+    packed_lightSource uLightSources[NLIGHTS];
 };

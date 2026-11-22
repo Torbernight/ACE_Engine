@@ -2,6 +2,7 @@
 #include <thread>
 #include <algorithm>
 #include "scene.hpp"
+#include "../core/settings.hpp"
 #include "../renderer/shader_compiler.hpp"
 
 glm::vec3 castVector3(const aiVector3D &V)
@@ -291,7 +292,6 @@ void Scene::load_camera(const aiScene* S)
 void Scene::load_lights(const aiScene* S)
 {
     unsigned int nLights = S->mNumLights;
-    this->m.init_constants.push_back(nLights);
     this->Lights.resize(nLights);
     for(int n = 0; n < nLights; n++)
     {
@@ -370,10 +370,6 @@ void Scene::clean_meshes()
     Meshes.erase(std::remove_if(Meshes.begin(), Meshes.end(), [](Renderer::Mesh& m){return m.m.discard;}), Meshes.end());
 }
 
-void Scene::set_max_instances()
-{
-    m.max_instances = 1;
-}
 
 Scene* Scene::import_scene(const path& pFile) 
 {
@@ -402,7 +398,7 @@ Scene* Scene::import_scene(const path& pFile)
     //Scene->find_batchable();
     //Scene->clean_meshes();
 
-    scene->set_max_instances();
+    scene->m.max_instances = 1;
 
     for (StaticObject &obj: scene->static_objects)
     {
@@ -434,11 +430,11 @@ void Scene::reload_DeferredShader(Renderer::ShaderStage stage, const std::vector
 {
     Renderer::shader_source src;
     Renderer::Shader *S = nullptr;
-    if (stage == Renderer::Fragment){
+    if (stage == Renderer::ShaderStage_Fragment){
             S = &m.fShader;
             src = Renderer::shader_source(EShLangFragment, m.deferred_fShader);
 
-    } else if (stage == Renderer::Vertex){
+    } else if (stage == Renderer::ShaderStage_Vertex){
             S = &m.vShader;
             src = Renderer::shader_source(EShLangVertex, m.deferred_vShader);
     }
@@ -458,11 +454,11 @@ void Scene::reload_DeferredShader(Renderer::ShaderStage stage)
 {
     Renderer::shader_source src;
     Renderer::Shader *S = nullptr;
-    if (stage == Renderer::Fragment){
+    if (stage == Renderer::ShaderStage_Fragment){
             S = &m.fShader;
             src = Renderer::shader_source(EShLangFragment, m.deferred_fShader);
 
-    } else if (stage == Renderer::Vertex){
+    } else if (stage == Renderer::ShaderStage_Vertex){
             S = &m.vShader;
             src = Renderer::shader_source(EShLangVertex, m.deferred_vShader);
     }
@@ -480,13 +476,14 @@ void Scene::load_DeferredShader(const path& vertex, const path& fragment)
     m.deferred_vShader = vertex;
     m.deferred_fShader = fragment;
 
-    m.vShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangVertex, m.deferred_vShader));
-    m.fShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangFragment, m.deferred_fShader));
-
-    for(int i = 0; i < m.init_constants.size(); i++)
-    {
-        m.fShader.add_specialization_const(m.init_constants[i], i);
+    std::string shader_prefix = "";
+    if (Lights.size() > 0){
+        shader_prefix = "#define NLIGHTS " + std::to_string(Lights.size()) + "\n";
     }
+
+    m.vShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangVertex, m.deferred_vShader));
+    m.fShader = compile_shader(Renderer::shader_source(EShLanguage::EShLangFragment, m.deferred_fShader, shader_prefix));
+
     m.vShader.specialize();
     m.fShader.specialize();
     m.sProgram.attachShader(m.vShader);
@@ -496,6 +493,13 @@ void Scene::load_DeferredShader(const path& vertex, const path& fragment)
 
 void Scene::updatePostProcessBuffer()
 {
+    SettingsManager &settings = SettingsManager::get();
+    postprocess.Brightness = settings["Brightness"]->as_float();
+    postprocess.Contrast = settings["Contrast"]->as_float();
+    postprocess.Saturation = settings["Saturation"]->as_float();
+    postprocess.Gamma = settings["Gamma"]->as_float();
+    postprocess.Exposure = settings["Exposure"]->as_float();
+    postprocess.FXAA = settings["FXAA"]->as_bool();
     m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
 }
 

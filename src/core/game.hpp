@@ -59,9 +59,6 @@ class Game
     bool pause_rendering = false;
     bool open_menu       = false;
     
-    bool vsync           = false;
-    bool showInfo        = false;
-    float mouse_sensitivity = 10.0f;
     float tick_rate         = 1.0/60.0;
 
     enum MSAALevel{
@@ -121,7 +118,7 @@ class Game
 
     inline void startFrame();
     inline void endFrame();
-    inline void end_norender();
+    inline void endFrameWithoutRendering();
 
 
     void cleanup();

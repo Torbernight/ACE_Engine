@@ -122,7 +122,7 @@ void Player::rotate(float dt)
 
     SettingsManager &settings = SettingsManager::get();
 
-    float mouse_sensitivity = settings["mouse sensitivity"]->as_float();
+    float mouse_sensitivity = settings["mouse sensitivity"].as_float();
 
     InputHandler &input = InputHandler::get();
 

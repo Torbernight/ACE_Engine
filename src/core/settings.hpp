@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <fstream>
 #include <string>
 #include <map>
 
@@ -8,7 +9,8 @@ enum ValueType
 {
     ValueType_Float,
     ValueType_Uint,
-    ValueType_Bool
+    ValueType_Bool,
+    ValueType_Int
 };
 
 class Setting
@@ -23,6 +25,9 @@ class Setting
 
     virtual const unsigned int& as_uint() const = 0;
     virtual unsigned int& as_uint()             = 0;
+
+    virtual const int& as_int() const = 0;
+    virtual int& as_int()             = 0;
 
     virtual const bool& as_bool() const = 0;
     virtual bool& as_bool()             = 0;
@@ -42,12 +47,25 @@ class SettingValue : public Setting
 
     const float& as_float() const override { return _value.as_float; }
     float& as_float()             override { return _value.as_float; }
+    operator float&()        { return _value.as_float; }
+    operator float()        const { return _value.as_float; }
 
     const unsigned int& as_uint() const override { return _value.as_uint; }
     unsigned int& as_uint()             override { return _value.as_uint; }
+    operator unsigned int&() { return _value.as_uint;  }
+    operator unsigned int() const { return _value.as_uint;  }
+
+    const int& as_int() const override { return _value.as_int; }
+    int& as_int()             override { return _value.as_int; }
+    operator int&()          { return _value.as_int;   }
+    operator int()          const { return _value.as_int;   }
+
 
     const bool& as_bool() const override { return _value.as_bool; }
     bool& as_bool()             override { return _value.as_bool; }
+    operator bool&()         { return _value.as_bool;  }
+    operator bool()         const { return _value.as_bool;  }
+
 
     ValueType get_type() const { return _type; }
 
@@ -57,6 +75,7 @@ class SettingValue : public Setting
     {
         float as_float;
         unsigned int as_uint;
+        int as_int;
         bool as_bool;
     } _value;
     
@@ -66,6 +85,8 @@ class SettingValue : public Setting
 
 class SettingsDirectory : public Setting 
 {
+    friend class SettingsManager;
+
     public:
 
     SettingsDirectory() : Setting(true, false) {}
@@ -80,17 +101,24 @@ class SettingsDirectory : public Setting
     
     SettingValue *set(const std::string& path, bool value);
 
+    SettingValue *set(const std::string& path, int value);
+
     const float& as_float() const {};
     float& as_float()             {};
 
     const unsigned int& as_uint() const {};
     unsigned int& as_uint()             {};
 
+    const int& as_int() const {};
+    int& as_int()             {};
+
     const bool& as_bool() const {};
     bool& as_bool()             {};
 
     private:
 
+    void save(std::fstream& file, int depth) const;
+    
     Setting *_get(const std::string& p);
 
     SettingValue *_get_or_create_value(const std::string &p, ValueType type);
@@ -112,9 +140,9 @@ class SettingsManager
         return settings;
     }
 
-    Setting* operator[](const std::string& v)
+    Setting& operator[](const std::string& v)
     {
-        return root->lookup(v);
+        return *root->lookup(v);
     }
 
     SettingValue* set(const std::string &k, float val){
@@ -126,6 +154,13 @@ class SettingsManager
     SettingValue* set(const std::string &k, unsigned int val){
         return root->set(k, val);
     }
+    SettingValue* set(const std::string &k, int val){
+        return root->set(k, val);
+    }
+
+    bool load(const char* path);
+
+    void save(const char* path) const;
 
     private:
 

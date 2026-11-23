@@ -74,6 +74,18 @@ class Player
         makeProj();
     }
 
+    void setFarPlane(float far)
+    {
+        m.zFar = far;
+        makeProj();
+    }
+
+    void setNearPlane(float near)
+    {
+        m.zNear = near;
+        makeProj();
+    }
+
     void setPos(const glm::vec3& pos)
     {
         m.pos = pos;

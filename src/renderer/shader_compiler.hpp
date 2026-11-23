@@ -183,8 +183,8 @@ void compile_shader_SPV(const shader_source& src, std::vector<unsigned int>& SPI
     glslang::TShader S(src.stage);
     std::string Ssource = src.source;
     if (preprocessor_const){
-        std::size_t I = Ssource.find("#version 460");
-        Ssource.insert(I+13, std::string(preprocessor_const));
+        std::size_t I = Ssource.find_first_of('\n');
+        Ssource.insert(I+1, std::string(preprocessor_const));
     }
     const char* source = Ssource.data();
     S.setStrings(&source, 1);

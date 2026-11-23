@@ -32,23 +32,22 @@ struct CameraUBO
     float zFar;
 };
 
-class Game
+class Engine
 {
     public:
 
     Window win;
 
-    uint64_t frame = 0;
-    uint64_t ticks = 0;
-    float runtime = 0.0;
-    float dt      = 0.0;
-    float fps     = 0.0;
+    uint64_t frame  = 0ul;
+    uint64_t ticks  = 0ul;
+    float runtime   = 0.0f;
+    float timeDelta = 0.0f;
 
     Mix_Chunk *footsteps_wave = nullptr; // TODO implementar sistema de audio aparte que maneje esto
     ImGuiIO* imgui_IO         = nullptr;
 
     Player player;
-    Scene *gameScene = nullptr;
+    Scene *currentScene = nullptr;
 
     Renderer::Buffer TransformBuffer = Renderer::Buffer(GL_UNIFORM_BUFFER);
     Renderer::Buffer Camera_Buffer   = Renderer::Buffer(GL_UNIFORM_BUFFER);
@@ -58,27 +57,17 @@ class Game
 
     bool pause_rendering = false;
     bool open_menu       = false;
-    
     float tick_rate         = 1.0/60.0;
 
-    enum MSAALevel{
-        MS_OFF,
-        MS_2,
-        MS_4,
-        MS_8,
-        MS_NUM_OPTIONS
-    } MSAA = MS_OFF; // TODO meter esto en un sistema de configuración
-
-
-    Game(const std::string& title, int window_w, int window_h);
-    Game(const std::string& title, int window_w, int window_h, int window_posx, int window_posy);
-    Game(const std::string& title, int window_w, int window_h, int flags);
-    Game(const std::string& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
+    Engine(const std::string& title, int window_w, int window_h);
+    Engine(const std::string& title, int window_w, int window_h, int window_posx, int window_posy);
+    Engine(const std::string& title, int window_w, int window_h, int flags);
+    Engine(const std::string& title, int window_w, int window_h, int window_posx, int window_posy, int flags);
     
-    Game(Game&&)                 = delete;
-    Game(const Game&)            = delete;
-    Game& operator=(const Game&) = delete;
-    Game& operator=(Game&&)      = delete;
+    Engine(Engine&&)                 = delete;
+    Engine(const Engine&)            = delete;
+    Engine& operator=(const Engine&) = delete;
+    Engine& operator=(Engine&&)      = delete;
 
 
     void processEvents();

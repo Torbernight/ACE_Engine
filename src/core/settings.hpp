@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 
+#include <SDL_assert.h>
 
 enum ValueType 
 {
@@ -103,17 +104,17 @@ class SettingsDirectory : public Setting
 
     SettingValue *set(const std::string& path, int value);
 
-    const float& as_float() const {};
-    float& as_float()             {};
+    const float& as_float() const { SDL_assert(false);};
+    float& as_float()             { SDL_assert(false);};
 
-    const unsigned int& as_uint() const {};
-    unsigned int& as_uint()             {};
+    const unsigned int& as_uint() const { SDL_assert(false);};
+    unsigned int& as_uint()             { SDL_assert(false);};
 
-    const int& as_int() const {};
-    int& as_int()             {};
+    const int& as_int() const { SDL_assert(false);};
+    int& as_int()             { SDL_assert(false);};
 
-    const bool& as_bool() const {};
-    bool& as_bool()             {};
+    const bool& as_bool() const { SDL_assert(false);};
+    bool& as_bool()             { SDL_assert(false);};
 
     private:
 

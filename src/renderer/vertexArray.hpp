@@ -12,12 +12,12 @@ class vertexArray
     public:
     struct vertexAttrib
     {
-        unsigned index;
+        unsigned int index;
         int size;
         int type;
         int normalized;
         int stride;
-        unsigned int offset;
+        unsigned long offset;
     };
 
     std::vector<vertexAttrib> Attributes;

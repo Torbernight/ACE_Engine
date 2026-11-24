@@ -11,7 +11,6 @@ Since then I learned a LOT about software engineering practices and software dev
 It has a LOT of design flaws that I'm currently addressing and working, so while it ***technically*** compiles and runs and ***could*** be made into a fully fledged videogame, it is for the best to first try to fix most of these issues, some of which are listed below.
 
 ## Current goals:
-- Use CMake as build system
 - Improve overall project organization and design
 - Separate rendering system into front-end and back-end
 - Finish implementing entities

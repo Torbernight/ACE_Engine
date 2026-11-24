@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <execution>
 
-#include "SDL_keycode.h"
-#include "SDL_mouse.h"
+#include <SDL_keycode.h>
+#include <SDL_mouse.h>
+#include <SDL_video.h>
 
-#include "SDL_video.h"
-#include "imgui/backends/imgui_impl_sdl2.h"
-#include "imgui/imgui.h"
+#include <imgui/backends/imgui_impl_sdl2.h>
+#include <imgui/imgui.h>
 
 #include "../input/input.hpp"
 #include "../physics/physics.hpp"
@@ -558,13 +558,4 @@ void Engine::cleanup()
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
-}
-
-int main()
-{
-    Engine App("ACE Engine", 500, 500);
-    App.init();
-    App.mainLoop();
-    App.cleanup();
-    return 0;
 }

@@ -1,13 +1,13 @@
-FOV: 0.872665
+FOV: 1.309000
 FXAA: 1
 MSAA: 0
-brightness: 0.604
-contrast: 1.828
-exposure: 271.757
-far plane: 0.1
-gamma: 2.2
-mouse sensitivity: 10
-near plane: 1000
-saturation: 0.686
+brightness: 0.479000
+contrast: 1.925000
+exposure: 4.500000
+far plane: 1000.000000
+gamma: 2.200000
+mouse sensitivity: 16.000000
+near plane: 0.100000
+saturation: 1.125000
 show info: 0
 vsync: 1

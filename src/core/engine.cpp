@@ -189,9 +189,9 @@ void Engine::showConfig()
     msaa_changed = ImGui::SliderInt("MSAA", &MSAA, 0, 4, get_MSAA_str(MSAA), ImGuiSliderFlags_AlwaysClamp);
 
     ImGui::SeparatorText("Camera options");
-    if (ImGui::DragFloat("near plane", &near_plane))                    camera_settings_changed = true;
-    if (ImGui::DragFloat("far plane", &far_plane))                      camera_settings_changed = true;
-    if (ImGui::DragFloat("FOV", &FOV, 0.01f, M_PIf/16.0f, M_PIf/2.0f))  camera_settings_changed = true;
+    if (ImGui::DragFloat("near plane", &near_plane, 0.1f, 0.1f))                                                     camera_settings_changed = true;
+    if (ImGui::DragFloat("far plane", &far_plane))                                                                                 camera_settings_changed = true;
+    if (ImGui::SliderAngle("FOV", &FOV, glm::degrees(M_PIf/16.0f), glm::degrees(M_PIf/2.0f))) camera_settings_changed = true;
 
     any_setting_changed = camera_settings_changed || mouse_sensitivity_changed || msaa_changed || vsync_changed || post_process_settings_changed;
 
@@ -471,6 +471,7 @@ void Engine::frustumTest()
 void Engine::updateGameLogic()
 {
     static float accumulated = 0.0f;
+    accumulated += timeDelta;
     InputHandler &input = InputHandler::get();
 
     while (accumulated >= tick_rate)
@@ -512,10 +513,14 @@ void Engine::endFrame()
     imguiFrameEnd();
     win.swapBuffer();
     frame++;
+    timeDelta = frame_timer.Count();
+    runtime += timeDelta;
 }
 
 void Engine::endFrameWithoutRendering()
 {
+    timeDelta = frame_timer.Count();
+    runtime += timeDelta;
 }
 
 void Engine::mainLoop()

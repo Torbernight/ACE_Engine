@@ -208,7 +208,8 @@ void SettingsDirectory::save(std::fstream& outFile, int depth) const
             switch(value->get_type())
             {
                 case ValueType_Float:
-                    outFile << value->as_float();
+                
+                    outFile << std::to_string(value->as_float());
                     break;
                 case ValueType_Uint:
                     outFile << value->as_uint();

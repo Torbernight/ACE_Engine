@@ -494,11 +494,11 @@ void Scene::load_DeferredShader(const path& vertex, const path& fragment)
 void Scene::updatePostProcessBuffer()
 {
     SettingsManager &settings = SettingsManager::get();
-    postprocess.Brightness = settings["Brightness"].as_float();
-    postprocess.Contrast = settings["Contrast"].as_float();
-    postprocess.Saturation = settings["Saturation"].as_float();
-    postprocess.Gamma = settings["Gamma"].as_float();
-    postprocess.Exposure = settings["Exposure"].as_float();
+    postprocess.Brightness = settings["brightness"].as_float();
+    postprocess.Contrast = settings["contrast"].as_float();
+    postprocess.Saturation = settings["saturation"].as_float();
+    postprocess.Gamma = settings["gamma"].as_float();
+    postprocess.Exposure = settings["exposure"].as_float();
     postprocess.FXAA = settings["FXAA"].as_bool();
     m.postProcess_buffer.bufferData(sizeof(postprocess), &postprocess, GL_DYNAMIC_DRAW);
 }
